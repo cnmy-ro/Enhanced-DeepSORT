@@ -16,3 +16,6 @@
 
 ### Baseline 
 - A Baseline for 3D Multi-Object Tracking: [paper](https://arxiv.org/pdf/1907.03961.pdf) [code](https://github.com/xinshuoweng/AB3DMOT)
+
+### Others
+- Cosine Metric Learning: [paper](https://elib.dlr.de/116408/1/WACV2018.pdf) [code](https://github.com/nwojke/cosine_metric_learning)
