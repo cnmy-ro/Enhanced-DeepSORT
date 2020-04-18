@@ -3,21 +3,18 @@
 ## Useful links
 
 ### Main Data set
-- KITTI 3D Object Detection dataset: [page](http://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d)
-
+- MOT16 Multiple Object (Pedestrian) Tracking benchmark: [page](motchallenge.net/data/MOT16/) [3rd party evaluation code](github.com/cheind/py-motmetrics)
 
 ### Trackers
-- DeepSORT pedestrian tracking: [paper](https://arxiv.org/abs/1703.07402) [code](http://www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d)
-- SORT multi-object tracking: [paper](http://arxiv.org/abs/1602.00763) [code](https://github.com/abewley/sort) 
+- DeepSORT pedestrian tracking: [paper](arxiv.org/abs/1703.07402) [code](www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d)
+- SORT multi-object tracking: [paper](arxiv.org/abs/1602.00763) [code](github.com/abewley/sort) 
 
-### Object Detectors
-- Stereo-RCNN 3D object detector: [paper](https://arxiv.org/pdf/1902.09738.pdf) [code](https://github.com/HKUST-Aerial-Robotics/Stereo-RCNN)
-- Center-NET 2D/3D object detector and pose estimator: [paper](http://arxiv.org/abs/1904.07850) [code](https://github.com/xingyizhou/CenterNet)
+### Object detector
+- MobileNet-SSD [TF object detection API](github.com/tensorflow/models/tree/master/research/object_detection) [Model zoo](github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md)
 
-### Baseline for testing 
-- A Baseline for 3D Multi-Object Tracking: [paper](https://arxiv.org/pdf/1907.03961.pdf) [code](https://github.com/xinshuoweng/AB3DMOT)
+### Enhancement for real-time performance 
+- Confidence Trigger Detection [paper](arxiv.org/abs/1902.00615)
 
-### Vehicle Re-identification
-- Cosine Metric Learning (used to re-ID humans in DeepSORT): [paper](https://elib.dlr.de/116408/1/WACV2018.pdf) [code](https://github.com/nwojke/cosine_metric_learning)
-- Vehicle re-ID baseline: [code](https://github.com/Jakel21/vehicle-ReID-baseline)
-- PKU Vehicle ID dataset for vehicle re-identification: [page](https://pkuml.org/resources/pku-vehicleid.html)
+
+### For vehicle tracking 
+- Deep-SORT for vehicle tracking [code](github.com/abhyantrika/nanonets_object_tracking)
