@@ -18,6 +18,14 @@ from deep_sort.tracker import Tracker
 from config import *
 
 ###############################################################################
+
+'''
+TODO:
+    1. Add tracking functionality in 'cam' mode
+    2. Add object detection pipeline in 'eval' mode
+'''
+
+###############################################################################
 #                           Object detection
 ###############################################################################
 # patch tf1 into `utils.ops`
