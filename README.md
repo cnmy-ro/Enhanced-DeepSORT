@@ -6,7 +6,7 @@
 - MOT16 Multiple Object (Pedestrian) Tracking benchmark: [page](motchallenge.net/data/MOT16/) | [3rd party evaluation code](github.com/cheind/py-motmetrics)
 
 ### Trackers
-- DeepSORT pedestrian tracking: [paper](arxiv.org/abs/1703.07402) | [code](www.cvlibs.net/datasets/kitti/eval_object.php?obj_benchmark=3d)
+- DeepSORT pedestrian tracking: [paper](arxiv.org/abs/1703.07402) | [code](github.com/nwojke/deep_sort)
 - SORT multi-object tracking: [paper](arxiv.org/abs/1602.00763) | [code](github.com/abewley/sort) 
 
 ### Object detector
