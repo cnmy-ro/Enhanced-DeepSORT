@@ -1,4 +1,4 @@
-# DeepSORT-3D
+# Real-time DeepSORT
 
 ## Useful links
 
