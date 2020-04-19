@@ -175,8 +175,8 @@ def run_cam_mode(detection_model, category_index):
 
 
 def run_eval_mode(detection_model, category_index):
-    seq_info = gather_sequence_info(sequence_dir, detection_file)
-    metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
+    seq_info = gather_sequence_info(SEQUENCE_DIR, DETECTION_FILE)
+    metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
     tracker = Tracker(metric)
     results = []
 
@@ -185,14 +185,13 @@ def run_eval_mode(detection_model, category_index):
 
         # Load image and generate detections.
         detections = create_detections(
-            seq_info["detections"], frame_idx, min_detection_height)
-        detections = [d for d in detections if d.confidence >= min_confidence]
+            seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
+        detections = [d for d in detections if d.confidence >= MIN_CONFIDENCE]
 
         # Run non-maxima suppression.
         boxes = np.array([d.tlwh for d in detections])
         scores = np.array([d.confidence for d in detections])
-        indices = preprocessing.non_max_suppression(
-            boxes, nms_max_overlap, scores)
+        indices = preprocessing.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
         detections = [detections[i] for i in indices]
 
         # Update tracker.
@@ -200,7 +199,7 @@ def run_eval_mode(detection_model, category_index):
         tracker.update(detections)
 
         # Update visualization.
-        if display:
+        if DISPLAY:
             image = cv2.imread(
                 seq_info["image_filenames"][frame_idx], cv2.IMREAD_COLOR)
             vis.set_image(image.copy())
@@ -216,14 +215,14 @@ def run_eval_mode(detection_model, category_index):
                 frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3]])
 
     # Run tracker.
-    if display:
+    if DISPLAY:
         visualizer = visualization.Visualization(seq_info, update_ms=5)
     else:
         visualizer = visualization.NoVisualization(seq_info)
     visualizer.run(frame_callback)
 
     # Store results.
-    f = open(output_file, 'w')
+    f = open(OUTPUT_FILE, 'w')
     for row in results:
         print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1' % (row[0], row[1], row[2], row[3], row[4], row[5]),
               file=f)
