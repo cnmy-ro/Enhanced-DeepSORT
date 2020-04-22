@@ -23,7 +23,8 @@ from config import *
 '''
 TODO:
     1. Clean up 'cam' mode code
-    2. Add object detection pipeline in 'eval' mode
+    2. Use logging for debugging
+    3. Add object detection pipeline in 'eval' mode
 '''
 
 ###############################################################################
