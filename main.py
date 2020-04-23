@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 import numpy as np
 import cv2
@@ -22,10 +23,15 @@ from config import *
 
 '''
 TODO:
-    1. Clean up 'cam' mode code
-    2. Use logging for debugging
-    3. Add object detection pipeline in 'eval' mode
+    1. Set up the benchmark code and integrate it into this
+    2. Reproduce original 'eval' results. Produce the new 'eval' (with SSD detector) results.
+       Compare using all the tracking metrics (no FPS).
 '''
+
+###############################################################################
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 ###############################################################################
 #                           Object detection
@@ -77,6 +83,36 @@ def run_inference_for_single_image(model, image):
       output_dict['detection_masks_reframed'] = detection_masks_reframed.numpy()
 
     return output_dict
+
+
+def detect_humans(detection_model, frame):
+    output_dict =  run_inference_for_single_image(detection_model, frame)
+
+    # output_img = vis_util.visualize_boxes_and_labels_on_image_array(frame,
+    #                                                             output_dict['detection_boxes'],
+    #                                                             output_dict['detection_classes'],
+    #                                                             output_dict['detection_scores'],
+    #                                                             category_index,
+    #                                                             instance_masks=output_dict.get('detection_masks_reframed', None),
+    #                                                             use_normalized_coordinates=True,
+    #                                                             line_thickness=8)
+
+
+    all_bboxes = output_dict['detection_boxes']
+    all_detection_classes = output_dict['detection_classes']
+    all_detection_scores = output_dict['detection_scores']
+
+    detection_list = [] # List of DeepSORT's Detection objects
+    detection_scores = [] # List of score for all humans detected
+    for i, box in enumerate(all_bboxes):
+        det_class = all_detection_classes[i]
+        det_score = all_detection_scores[i]
+        if det_class == 1 and det_score > MIN_CONFIDENCE: # If the detected object is a person with a confidence of at least MIN_CONFIDENCE
+            y1,x1,y2,x2 = int(box[0]*frame.shape[0]), int(box[1]*frame.shape[1]), int(box[2]*frame.shape[0]), int(box[3]*frame.shape[1])
+            detection_list.append(tuple([x1,y1,x2-x1,y2-y1]))
+            detection_scores.append(det_score)
+
+    return detection_list, detection_scores
 
 ###############################################################################
 #                                Tracking
@@ -146,11 +182,9 @@ def create_detections(detection_mat, frame_idx, min_height=0):
     return detection_list
 
 
-def create_detections_cam_mode(frame, bboxes, confidence_scores, encoder):
+def cvt_to_detection_object_list(frame, bboxes, confidence_scores, encoder):
     detection_list = []
     features = encoder(frame, bboxes)
-    #print("features type:", type(features))
-    #print("features: ", features)
     for i, bbox in enumerate(bboxes):
         detection_list.append(Detection(bbox, confidence_scores[i], features[i]))
     return detection_list
@@ -158,7 +192,7 @@ def create_detections_cam_mode(frame, bboxes, confidence_scores, encoder):
 ###############################################################################
 #                               Run options
 ###############################################################################
-def run_cam_mode(detection_model, category_index):
+def run_cam_mode(detection_model):
     cam = cv2.VideoCapture(0)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
@@ -168,68 +202,44 @@ def run_cam_mode(detection_model, category_index):
 
     encoder = gen_det.create_box_encoder('resources/networks/mars-small128.pb', batch_size=32)
 
+    # Cam loop
     while True:
-      t1 = time.time()
       ret, frame = cam.read()
+      t1 = time.time()
 
-      output_dict =  run_inference_for_single_image(detection_model, frame)
+      # Detect humans in the frame
+      detection_list, detection_scores = detect_humans(detection_model, frame)
+      detection_list = cvt_to_detection_object_list(frame, detection_list, detection_scores, encoder)
 
-      # output_img = vis_util.visualize_boxes_and_labels_on_image_array(frame,
-      #                                                             output_dict['detection_boxes'],
-      #                                                             output_dict['detection_classes'],
-      #                                                             output_dict['detection_scores'],
-      #                                                             category_index,
-      #                                                             instance_masks=output_dict.get('detection_masks_reframed', None),
-      #                                                             use_normalized_coordinates=True,
-      #                                                             line_thickness=8)
-
-
-      all_bboxes = output_dict['detection_boxes']
-      all_detection_classes = output_dict['detection_classes']
-      all_detection_scores = output_dict['detection_scores']
-
-      detection_list = [] # List of DeepSORT's Detection objects
-      detection_scores = [] # List of score for all humans detected
-      for i, box in enumerate(all_bboxes):
-          det_class = all_detection_classes[i]
-          det_score = all_detection_scores[i]
-          if det_class == 1: # If the detected object is a person with a confidence of at least 70%
-              y1,x1,y2,x2 = int(box[0]*frame.shape[0]), int(box[1]*frame.shape[1]), int(box[2]*frame.shape[0]), int(box[3]*frame.shape[1])
-              #cv2.rectangle(output_img, (x1,y1), (x2,y2), (0,255,0))
-              detection_list.append(tuple([x1,y1,x2-x1,y2-y1]))
-              detection_scores.append(det_score)
-      detection_list = create_detections_cam_mode(frame, detection_list, detection_scores, encoder)
-
-      # Tracker stuff -----------------
-      # Update tracker.
+      # Update tracker
       tracker.predict()
       tracker.update(detection_list)
 
-      # Update visualization.---
+      # FPS counter
+      fps = 1/(time.time()-t1)
+
+      # Update visualization
       output_img = frame.copy()
 
-      # Visualize all detections
+      ## Visualize all detections
       for i, detection in enumerate(detection_list):
           x,y,w,h = detection.tlwh
           pt1 = int(x), int(y)
           pt2 = int(x + w), int(y + h)
           cv2.rectangle(output_img, pt1, pt2, (0, 0, 255), 2)
 
-      # Visualize confirmed tracks
+      ## Visualize confirmed tracks
       tracks = tracker.tracks
       for track in tracks:
           if not track.is_confirmed() or track.time_since_update > 0:
               continue
           color = visualization.create_unique_color_uchar(track.track_id)
           text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
-
           center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
           pt2 = pt1[0] + 10 + text_size[0][0], pt1[1] + 10 + text_size[0][1]
           cv2.rectangle(output_img, pt1, pt2, color, -1)
           cv2.putText(output_img, str(track.track_id), center, cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
 
-      # FPS counter
-      fps = 1/(time.time()-t1)
       cv2.putText(output_img, 'FPS: {:.1f}'.format(fps), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
       cv2.imshow('detection output', output_img)
       if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -239,34 +249,50 @@ def run_cam_mode(detection_model, category_index):
 
 
 
-def run_eval_mode(detection_model, category_index):
+def run_eval_mode(detection_model, online_detection=True):
     seq_info = gather_sequence_info(SEQUENCE_DIR, DETECTION_FILE)
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
     tracker = Tracker(metric)
     results = []
 
+    encoder = gen_det.create_box_encoder('resources/networks/mars-small128.pb', batch_size=32)
+
+    n_frames = len(seq_info['image_filenames'])
+
     def frame_callback(vis, frame_idx):
-        print("Processing frame %05d" % frame_idx)
+        logger.info("Processing frame %05d" % frame_idx)
 
-        # Load image and generate detections.
-        detections = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
-        detections = [d for d in detections if d.confidence >= MIN_CONFIDENCE]
+        frame = cv2.imread(seq_info['image_filenames'][frame_idx])
+        t1 = time.time()
 
-        # Run non-maxima suppression.
-        boxes = np.array([d.tlwh for d in detections])
-        scores = np.array([d.confidence for d in detections])
-        indices = preprocessing.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
-        detections = [detections[i] for i in indices]
-        #print("detection bbox type: ", type(detections[0]))
+        if not online_detection: # Use the original pre-computed detections
+            # Load image and generate detections.
+            detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
+            detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
+
+            # Run non-maxima suppression.
+            boxes = np.array([d.tlwh for d in detection_list])
+            scores = np.array([d.confidence for d in detection_list])
+            indices = preprocessing.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
+            detection_list = [detection_list[i] for i in indices]
+
+
+        elif online_detection: # Use Mobilenet-SSD for online object detection
+            # Detect humans
+            detection_list, detection_scores = detect_humans(detection_model, frame)
+            detection_list = cvt_to_detection_object_list(frame, detection_list, detection_scores, encoder)
+
         # Update tracker.
         tracker.predict()
-        tracker.update(detections)
+        tracker.update(detection_list)
+
+        # FPS counter
+        fps = 1/(time.time()-t1)
 
         # Update visualization.
         if DISPLAY:
-            image = cv2.imread(seq_info["image_filenames"][frame_idx], cv2.IMREAD_COLOR)
-            vis.set_image(image.copy())
-            vis.draw_detections(detections)
+            vis.set_image(frame.copy())
+            vis.draw_detections(detection_list)
             vis.draw_trackers(tracker.tracks)
 
         # Store results.
@@ -274,7 +300,7 @@ def run_eval_mode(detection_model, category_index):
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue
             bbox = track.to_tlwh()
-            results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3]])
+            results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3], fps])
 
     # Run tracker.
     if DISPLAY:
@@ -284,24 +310,29 @@ def run_eval_mode(detection_model, category_index):
     visualizer.run(frame_callback)
 
     # Store results.
+    avg_fps = 0
     f = open(OUTPUT_FILE, 'w')
     for row in results:
         print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1' % (row[0], row[1], row[2], row[3], row[4], row[5]),
               file=f)
+        avg_fps += row[6]
+
+    avg_fps /= n_frames
+    logger.info("Average FPS: {:.2f}".format(avg_fps))
+
 ###############################################################################
-def main():
+def run(run_mode):
     detection_model, category_index = load_detection_model(DETECTION_MODEL_NAME)
 
-    print(detection_model.inputs)
-    print(detection_model.output_dtypes)
-
-    run_mode = 'cam'   # Options: 'cam', 'eval'
+    logger.debug(detection_model.inputs)
+    logger.debug(detection_model.output_dtypes)
 
     if run_mode == 'cam':
-        run_cam_mode(detection_model, category_index)
+        run_cam_mode(detection_model)
     elif run_mode == 'eval':
-        run_eval_mode(detection_model, category_index)
+        run_eval_mode(detection_model, online_detection=True)
 
 ###############################################################################
 if __name__ == '__main__':
-    main()
+    run_mode = 'eval'   # Options: 'cam', 'eval'
+    run(run_mode)
