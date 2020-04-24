@@ -20,14 +20,11 @@ from tools import generate_detections as gen_det
 from config import *
 
 ###############################################################################
-
-'''
-TODO:
-    1. Set up the benchmark code and integrate it into this
-    2. Reproduce original 'eval' results. Produce the new 'eval' (with SSD detector) results.
-       Compare using all the tracking metrics (no FPS).
 '''
 
+Check TODO.txt
+
+'''
 ###############################################################################
 
 logging.basicConfig(level=logging.DEBUG)
