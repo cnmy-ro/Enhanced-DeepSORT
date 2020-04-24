@@ -246,8 +246,24 @@ def run_cam_mode(detection_model):
 
 
 
-def run_eval_mode(detection_model, online_detection=True):
-    seq_info = gather_sequence_info(SEQUENCE_DIR, DETECTION_FILE)
+def run_eval_mode(detection_model, eval_detector_settings):
+
+    if eval_detector_settings['Online detection']:
+
+        if eval_detector_settings['Detector'] == 'default':
+            raise Exception(" Online detection is possible only when using SSD")
+
+        detection_file = None
+
+    else:
+
+        if eval_detector_settings['Detector'] == 'default':
+            detection_file = DETECTION_FILE_DEFAULT
+        elif eval_detector_settings['Detector'] == 'ssd':
+            detection_file = DETECTION_FILE_SSD
+
+
+    seq_info = gather_sequence_info(SEQUENCE_DIR, detection_file)
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
     tracker = Tracker(metric)
     results = []
@@ -262,7 +278,7 @@ def run_eval_mode(detection_model, online_detection=True):
         frame = cv2.imread(seq_info['image_filenames'][frame_idx])
         t1 = time.time()
 
-        if not online_detection: # Use the original pre-computed detections
+        if not eval_detector_settings['Online detection']: # Use pre-computed detections
             # Load image and generate detections.
             detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
             detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
@@ -274,7 +290,7 @@ def run_eval_mode(detection_model, online_detection=True):
             detection_list = [detection_list[i] for i in indices]
 
 
-        elif online_detection: # Use Mobilenet-SSD for online object detection
+        else: # Use Mobilenet-SSD on the fly
             # Detect humans
             detection_list, detection_scores = detect_humans(detection_model, frame)
             detection_list = cvt_to_detection_object_list(frame, detection_list, detection_scores, encoder)
@@ -314,12 +330,14 @@ def run_eval_mode(detection_model, online_detection=True):
               file=f)
         avg_fps += row[6]
 
-    avg_fps /= n_frames
-    logger.info("Average FPS: {:.2f}".format(avg_fps))
+    if eval_detector_settings['Online detection']:
+        avg_fps /= n_frames
+        logger.info("Average FPS: {:.2f}".format(avg_fps))
 
 ###############################################################################
-def run(run_mode):
+def run(run_mode, eval_detector_settings):
     detection_model, category_index = load_detection_model(DETECTION_MODEL_NAME)
+    logger.debug(category_index[1])
 
     logger.debug(detection_model.inputs)
     logger.debug(detection_model.output_dtypes)
@@ -327,9 +345,13 @@ def run(run_mode):
     if run_mode == 'cam':
         run_cam_mode(detection_model)
     elif run_mode == 'eval':
-        run_eval_mode(detection_model, online_detection=True)
+        run_eval_mode(detection_model, eval_detector_settings)
 
 ###############################################################################
 if __name__ == '__main__':
-    run_mode = 'eval'   # Options: 'cam', 'eval'
-    run(run_mode)
+
+    run_mode = 'eval'        # Options: 'cam', 'eval'
+    eval_detector_settings = {'Online detection': False, # Online detection is possible only while using SSD
+                              'Detector': 'default'}
+
+    run(run_mode, eval_detector_settings)
