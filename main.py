@@ -1,6 +1,4 @@
-import os
-import time
-import logging
+import os, time, logging
 
 import numpy as np
 import cv2
@@ -106,7 +104,7 @@ def detect_humans(detection_model, frame):
         det_score = all_detection_scores[i]
         if det_class == 1 and det_score > MIN_CONFIDENCE: # If the detected object is a person with a confidence of at least MIN_CONFIDENCE
             y1,x1,y2,x2 = int(box[0]*frame.shape[0]), int(box[1]*frame.shape[1]), int(box[2]*frame.shape[0]), int(box[3]*frame.shape[1])
-            detection_list.append(tuple([x1,y1,x2-x1,y2-y1]))
+            detection_list.append(tuple([x1,y1,x2-x1,y2-y1])) # tlwh format bboxes
             detection_scores.append(det_score)
 
     return detection_list, detection_scores
@@ -202,6 +200,7 @@ def run_cam_mode(detection_model):
     # Cam loop
     while True:
       ret, frame = cam.read()
+      # frame = cv2.cvtColor(frame, cv2.BGR2RGB) ########
       t1 = time.time()
 
       # Detect humans in the frame
@@ -272,8 +271,9 @@ def run_eval_mode(detection_model, eval_detector_settings):
 
     n_frames = len(seq_info['image_filenames'])
 
+    logger.debug(detection_file)
     def frame_callback(vis, frame_idx):
-        logger.info("Processing frame %05d" % frame_idx)
+        #logger.info("Processing frame %05d" % frame_idx)
 
         frame = cv2.imread(seq_info['image_filenames'][frame_idx])
         t1 = time.time()
@@ -342,16 +342,16 @@ def run(run_mode, eval_detector_settings):
     logger.debug(detection_model.inputs)
     logger.debug(detection_model.output_dtypes)
 
-    if run_mode == 'cam':
+    if run_mode == 'CAM':
         run_cam_mode(detection_model)
-    elif run_mode == 'eval':
+    elif run_mode == 'EVAL':
         run_eval_mode(detection_model, eval_detector_settings)
 
 ###############################################################################
 if __name__ == '__main__':
 
-    run_mode = 'eval'        # Options: 'cam', 'eval'
+    run_mode = 'EVAL'        # Options: 'CAM', 'EVAL'
     eval_detector_settings = {'Online detection': False, # Online detection is possible only while using SSD
-                              'Detector': 'default'}
+                              'Detector': 'ssd'}
 
     run(run_mode, eval_detector_settings)

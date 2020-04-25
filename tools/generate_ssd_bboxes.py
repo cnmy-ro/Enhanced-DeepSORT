@@ -1,5 +1,4 @@
-import logging
-import sys
+import os, sys, logging
 
 import numpy as np
 import cv2
@@ -8,19 +7,15 @@ import tensorflow as tf
 sys.path.append('../')
 from object_detection.utils import ops as utils_ops
 
-
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('gen_ssd_bboxes')
 
 ###############################################################################
 
 def load_detection_model(model_dir):
-    # model_dir = '../object_detection/models/'+ model_name + '/saved_model'
     model = tf.saved_model.load(str(model_dir))
     model = model.signatures['serving_default']
-    # List of the strings that is used to add correct label for each box.
-    # category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
     return model
-
 
 def run_inference_for_single_image(model, image):
     image = np.asarray(image)
@@ -78,15 +73,34 @@ def detect_humans(detection_model, frame, min_confidence):
 
 
 def generate_bboxes(mot_dir, detection_model, output_custom_det_dir):
-    pass
+    for sequence in os.listdir(mot_dir):
+        logger.debug("Processing %s" % sequence)
+        sequence_dir = os.path.join(mot_dir, sequence)
+        image_dir = os.path.join(sequence_dir, "img1")
+        image_filenames = {int(os.path.splitext(f)[0]): os.path.join(image_dir, f)
+                           for f in os.listdir(image_dir)}
+        output_file_path = os.path.join(output_custom_det_dir, sequence, 'det/det.txt')
+        output_file = open(output_file_path, 'w')
+        for frame_idx in sorted(image_filenames.keys()):
+            logger.debug("Processing frame {}".format(frame_idx))
+            frame = cv2.imread(image_filenames[frame_idx], cv2.IMREAD_COLOR)
+
+            bbox_list, detection_scores = detect_humans(detection_model, frame, min_confidence=0.5)
+            for bbox in bbox_list:
+                cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[0]+bbox[2],bbox[1]+bbox[3]), (0,255,0), 1)
+                output_file.write("{},-1,{},{},{},{},1,-1,-1,-1\n".format(frame_idx, bbox[0], bbox[1], bbox[2], bbox[3]))
+            # cv2.imshow('bboxes', frame)
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
+    output_file.close()
 
 ###############################################################################
 
 if __name__ == '__main__':
-    mot_dir = ''
+    mot_dir = '../MOT16/test/'
     model_name = 'ssdlite_mobilenet_v2_coco_2018_05_09'
     detection_model_dir = '../object_detection/models/'+ model_name + '/saved_model'
-    output_custom_det_dir = ''
+    output_custom_det_dir = '../resources/detections/SSD/Custom Bboxes/'
 
     detection_model = load_detection_model(detection_model_dir)
     generate_bboxes(mot_dir, detection_model, output_custom_det_dir)
