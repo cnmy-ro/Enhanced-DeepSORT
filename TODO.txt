@@ -1,7 +1,6 @@
 1. Collect EVAL data (with both default and SSD detections) for all MOT16 train sequences(because they have ground truths)
 
-2. Set up the benchmark code and integrate it into the project
+2. Prepare boths sets of EVAL data as specified by the motmetric library
 
-3. Compute metrics for original 'EVAL' on MOT16 train data.
-   Compute the metrics for the new 'EVAL' (with SSD detector).
+3. Compute metrics for both sets of EVAL data.
    Compare.

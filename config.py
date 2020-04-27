@@ -19,7 +19,7 @@ NMS_MAX_OVERLAP = 1.0
 MIN_DETECTION_HEIGHT = 0
 MAX_COSINE_DISTANCE = 0.2
 NN_BUDGET = 100
-DISPLAY = True
+DISPLAY = False
 
 
 ###############################################################################

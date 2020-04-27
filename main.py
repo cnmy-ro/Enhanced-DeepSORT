@@ -200,7 +200,6 @@ def run_cam_mode(detection_model):
     # Cam loop
     while True:
       ret, frame = cam.read()
-      # frame = cv2.cvtColor(frame, cv2.BGR2RGB) ########
       t1 = time.time()
 
       # Detect humans in the frame
@@ -332,14 +331,11 @@ def run_eval_mode(detection_model, eval_detector_settings):
         else:
             output_file_path = '/temp/hypotheses.txt'
 
-        f = open(output_file_path, 'w')
-        avg_fps = 0
-        for row in results:
-            print('%d,%d,%.2f,%.2f,%.2f,%.2f' % (row[0], row[1], row[2], row[3], row[4], row[5]),
-                  file=f)
-            avg_fps += row[6]
-        f.close()
-
+        with open(output_file_path, 'w') as output_file:
+            avg_fps = 0
+            for row in results:
+                output_file.write("{:d},{:d},{:.2f},{:.2f},{:.2f},{:.2f}\n".format(row[0], row[1], row[2], row[3], row[4], row[5]))
+                avg_fps += row[6]
         avg_fps /= n_frames
         logger.info("Average FPS: {:.2f}".format(avg_fps))
 
@@ -362,12 +358,12 @@ if __name__ == '__main__':
     # Run mode options:
     #     'CAM'  - Perform online detection and tracking on webcam stream
     #     'EVAL' - Perform evaluation on MOT16 data, store the results
-    run_mode = 'EVAL'
+    run_mode = 'CAM'
 
     # EVAL mode detector options:
     #     'default' - Use pre-computed default detections
     #     'ssd' - Use (pre-computed or online) MobileNetv2-SSD detections
     eval_detector_settings = {'Online detection': False, # Online detection is possible only while using SSD
-                              'Detector': 'ssd'}
+                              'Detector': 'default'}
 
     run(run_mode, eval_detector_settings)
