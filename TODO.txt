@@ -1,8 +1,4 @@
-1. Create a function that generates bboxes using SSD: benchmarking would be faster
-    - Create the new code file in Tools for generating bboxes as custom det files
-    - In generate_detections, use the custom det files to generate detections
+1. Set up the benchmark code and integrate it into the project
 
-2. Set up the benchmark code and integrate it into the project
-
-3. Reproduce original 'eval' results. Produce the new 'eval' (with SSD detector) results.
+2. Reproduce original 'eval' results. Produce the new 'eval' (with SSD detector) results.
    Compare using all the tracking metrics (no FPS).

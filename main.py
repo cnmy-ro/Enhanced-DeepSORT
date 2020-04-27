@@ -352,6 +352,6 @@ if __name__ == '__main__':
 
     run_mode = 'EVAL'        # Options: 'CAM', 'EVAL'
     eval_detector_settings = {'Online detection': False, # Online detection is possible only while using SSD
-                              'Detector': 'ssd'}
+                              'Detector': 'default'}
 
     run(run_mode, eval_detector_settings)
