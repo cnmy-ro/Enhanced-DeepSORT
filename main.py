@@ -326,7 +326,7 @@ def run_eval_mode(detection_model, eval_detector_settings):
 
         # Store results.
         if not eval_detector_settings['Online detection']:
-            output_dir = RESULTS_DIR + 'Task-1/' + 'EVAL_' + eval_detector_settings['Detector'] + '/'
+            output_dir = RESULTS_DIR + 'Task-1/' + 'EVAL_' + eval_detector_settings['Detector'] + '/Tracking output/'
             output_file_path = output_dir + sequence_name + '.txt'
         else:
             output_file_path = '/temp/hypotheses.txt'
