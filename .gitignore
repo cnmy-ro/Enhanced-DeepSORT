@@ -1,8 +1,16 @@
+# The MOT16 dataset
 MOT16/*
+
+# Saved Mobilenetv2-SSD models
 object_detection/models/*
-resources/detections/*
 
+# Generated detections (.npy files) for both Default and SSD pre-computed detections 
+resources/detections/Default/MOT16_POI_test/*
+resources/detections/Default/MOT16_POI_train/*
+resources/detections/SSD/MOT16_POI_test/*
+resources/detections/SSD/MOT16_POI_train/*
 
+# Py-caches
 __pycache__
 object_detection/core/__pycache__
 object_detection/data/__pycache__
