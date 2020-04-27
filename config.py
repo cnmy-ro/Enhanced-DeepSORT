@@ -10,10 +10,10 @@ PATH_TO_LABELS = 'object_detection/data/mscoco_label_map.pbtxt'
 ###############################################################################
 #                             TRACKING
 ###############################################################################
-SEQUENCE_DIR = './MOT16/test/MOT16-06'
-DETECTION_FILE_DEFAULT = './resources/detections/Default/MOT16_POI_test/MOT16-06.npy'
-DETECTION_FILE_SSD =     './resources/detections/SSD/MOT16_POI_test/MOT16-06.npy'
-OUTPUT_FILE = '/tmp/hypotheses.txt'
+MOT16_TRAIN_DATA_DIR = './MOT16/train/'
+DETECTION_DIR_DEFAULT = './resources/detections/Default/MOT16_POI_train/'
+DETECTION_DIR_SSD = './resources/detections/SSD/MOT16_POI_train/'
+RESULTS_DIR = './Results/'
 MIN_CONFIDENCE = 0.5
 NMS_MAX_OVERLAP = 1.0
 MIN_DETECTION_HEIGHT = 0

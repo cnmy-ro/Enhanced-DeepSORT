@@ -246,91 +246,100 @@ def run_cam_mode(detection_model):
 
 
 def run_eval_mode(detection_model, eval_detector_settings):
+    train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
+                            'MOT16-10', 'MOT16-11', 'MOT16-13']
 
-    if eval_detector_settings['Online detection']:
-
+    if not eval_detector_settings['Online detection']:
         if eval_detector_settings['Detector'] == 'default':
-            raise Exception(" Online detection is possible only when using SSD")
-
-        detection_file = None
-
-    else:
-
-        if eval_detector_settings['Detector'] == 'default':
-            detection_file = DETECTION_FILE_DEFAULT
+            detection_dir = DETECTION_DIR_DEFAULT
         elif eval_detector_settings['Detector'] == 'ssd':
-            detection_file = DETECTION_FILE_SSD
+            detection_dir = DETECTION_DIR_SSD
 
 
-    seq_info = gather_sequence_info(SEQUENCE_DIR, detection_file)
-    metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
-    tracker = Tracker(metric)
-    results = []
+    for sequence_name in train_sequence_names:
+        sequence_dir = MOT16_TRAIN_DATA_DIR + sequence_name + '/'
+        detection_file = detection_dir + sequence_name + '.npy'
 
-    encoder = gen_det.create_box_encoder('resources/networks/mars-small128.pb', batch_size=32)
+        if eval_detector_settings['Online detection']:
+            if eval_detector_settings['Detector'] == 'default':
+                raise Exception(" Online detection is possible only when using SSD")
+            detection_file = None
 
-    n_frames = len(seq_info['image_filenames'])
+        seq_info = gather_sequence_info(sequence_dir, detection_file)
+        metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
+        tracker = Tracker(metric)
+        results = []
 
-    logger.debug(detection_file)
-    def frame_callback(vis, frame_idx):
-        #logger.info("Processing frame %05d" % frame_idx)
+        encoder = gen_det.create_box_encoder('resources/networks/mars-small128.pb', batch_size=32)
 
-        frame = cv2.imread(seq_info['image_filenames'][frame_idx])
-        t1 = time.time()
+        n_frames = len(seq_info['image_filenames'])
 
-        if not eval_detector_settings['Online detection']: # Use pre-computed detections
-            # Load image and generate detections.
-            detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
-            detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
+        logger.debug(detection_file)
 
-            # Run non-maxima suppression.
-            boxes = np.array([d.tlwh for d in detection_list])
-            scores = np.array([d.confidence for d in detection_list])
-            indices = preprocessing.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
-            detection_list = [detection_list[i] for i in indices]
+        def frame_callback(vis, frame_idx):
+            logger.info("Processing Sequence {}, Frame {:05d}" .format(sequence_name, frame_idx))
 
+            frame = cv2.imread(seq_info['image_filenames'][frame_idx])
+            t1 = time.time()
 
-        else: # Use Mobilenet-SSD on the fly
-            # Detect humans
-            detection_list, detection_scores = detect_humans(detection_model, frame)
-            detection_list = cvt_to_detection_object_list(frame, detection_list, detection_scores, encoder)
+            if not eval_detector_settings['Online detection']: # Use pre-computed detections
+                # Load image and generate detections.
+                detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
+                detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
 
-        # Update tracker.
-        tracker.predict()
-        tracker.update(detection_list)
+                # Run non-maxima suppression.
+                boxes = np.array([d.tlwh for d in detection_list])
+                scores = np.array([d.confidence for d in detection_list])
+                indices = preprocessing.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
+                detection_list = [detection_list[i] for i in indices]
 
-        # FPS counter
-        fps = 1/(time.time()-t1)
+            else: # Use Mobilenet-SSD on the fly
+                # Detect humans
+                detection_list, detection_scores = detect_humans(detection_model, frame)
+                detection_list = cvt_to_detection_object_list(frame, detection_list, detection_scores, encoder)
 
-        # Update visualization.
+            # Update tracker.
+            tracker.predict()
+            tracker.update(detection_list)
+
+            # FPS counter
+            fps = 1/(time.time()-t1)
+
+            # Update visualization.
+            if DISPLAY:
+                vis.set_image(frame.copy())
+                vis.draw_detections(detection_list)
+                vis.draw_trackers(tracker.tracks)
+
+            # Store results.
+            for track in tracker.tracks:
+                if not track.is_confirmed() or track.time_since_update > 1:
+                    continue
+                bbox = track.to_tlwh()
+                results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3], fps])
+
+        # Run tracker.
         if DISPLAY:
-            vis.set_image(frame.copy())
-            vis.draw_detections(detection_list)
-            vis.draw_trackers(tracker.tracks)
+            visualizer = visualization.Visualization(seq_info, update_ms=5)
+        else:
+            visualizer = visualization.NoVisualization(seq_info)
+        visualizer.run(frame_callback)
 
         # Store results.
-        for track in tracker.tracks:
-            if not track.is_confirmed() or track.time_since_update > 1:
-                continue
-            bbox = track.to_tlwh()
-            results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3], fps])
+        if not eval_detector_settings['Online detection']:
+            output_dir = RESULTS_DIR + 'Task-1/' + 'EVAL_' + eval_detector_settings['Detector'] + '/'
+            output_file_path = output_dir + sequence_name + '.txt'
+        else:
+            output_file_path = '/temp/hypotheses.txt'
 
-    # Run tracker.
-    if DISPLAY:
-        visualizer = visualization.Visualization(seq_info, update_ms=5)
-    else:
-        visualizer = visualization.NoVisualization(seq_info)
-    visualizer.run(frame_callback)
+        f = open(output_file_path, 'w')
+        avg_fps = 0
+        for row in results:
+            print('%d,%d,%.2f,%.2f,%.2f,%.2f' % (row[0], row[1], row[2], row[3], row[4], row[5]),
+                  file=f)
+            avg_fps += row[6]
+        f.close()
 
-    # Store results.
-    avg_fps = 0
-    f = open(OUTPUT_FILE, 'w')
-    for row in results:
-        print('%d,%d,%.2f,%.2f,%.2f,%.2f,1,-1,-1,-1' % (row[0], row[1], row[2], row[3], row[4], row[5]),
-              file=f)
-        avg_fps += row[6]
-
-    if eval_detector_settings['Online detection']:
         avg_fps /= n_frames
         logger.info("Average FPS: {:.2f}".format(avg_fps))
 
@@ -350,8 +359,15 @@ def run(run_mode, eval_detector_settings):
 ###############################################################################
 if __name__ == '__main__':
 
-    run_mode = 'EVAL'        # Options: 'CAM', 'EVAL'
+    # Run mode options:
+    #     'CAM'  - Perform online detection and tracking on webcam stream
+    #     'EVAL' - Perform evaluation on MOT16 data, store the results
+    run_mode = 'EVAL'
+
+    # EVAL mode detector options:
+    #     'default' - Use pre-computed default detections
+    #     'ssd' - Use (pre-computed or online) MobileNetv2-SSD detections
     eval_detector_settings = {'Online detection': False, # Online detection is possible only while using SSD
-                              'Detector': 'default'}
+                              'Detector': 'ssd'}
 
     run(run_mode, eval_detector_settings)

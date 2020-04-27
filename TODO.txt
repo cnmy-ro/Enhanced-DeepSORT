@@ -1,4 +1,7 @@
-1. Set up the benchmark code and integrate it into the project
+1. Collect EVAL data (with both default and SSD detections) for all MOT16 train sequences(because they have ground truths)
 
-2. Reproduce original 'eval' results. Produce the new 'eval' (with SSD detector) results.
-   Compare using all the tracking metrics (no FPS).
+2. Set up the benchmark code and integrate it into the project
+
+3. Compute metrics for original 'EVAL' on MOT16 train data.
+   Compute the metrics for the new 'EVAL' (with SSD detector).
+   Compare.

@@ -92,15 +92,15 @@ def generate_bboxes(mot_dir, detection_model, output_custom_det_dir):
             # cv2.imshow('bboxes', frame)
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     break
-    output_file.close()
+        output_file.close()
 
 ###############################################################################
 
 if __name__ == '__main__':
-    mot_dir = '../MOT16/test/'
+    mot_dir = '../MOT16/train/'
     model_name = 'ssdlite_mobilenet_v2_coco_2018_05_09'
     detection_model_dir = '../object_detection/models/'+ model_name + '/saved_model'
-    output_custom_det_dir = '../resources/detections/SSD/Custom Bboxes/'
+    output_custom_det_dir = '../resources/detections/SSD/Custom Bboxes/MOT16_train/'
 
     detection_model = load_detection_model(detection_model_dir)
     generate_bboxes(mot_dir, detection_model, output_custom_det_dir)

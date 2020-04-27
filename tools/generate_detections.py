@@ -143,7 +143,7 @@ def generate_detections(encoder, mot_dir, output_dir, detection_dir=None):
             pass
         else:
             raise ValueError(
-                "Failed to created output directory '%s'" % output_dir)
+                "Failed to create output directory '%s'" % output_dir)
 
     for sequence in os.listdir(mot_dir):
         print("Processing %s" % sequence)
@@ -190,7 +190,7 @@ def parse_args():
         default="../resources/networks/mars-small128.pb",
         help="Path to frozen inference graph protobuf.")
     parser.add_argument(
-        "--mot_dir", default='../MOT16/test/',
+        "--mot_dir", default='../MOT16/train/',
         help="Path to MOTChallenge directory (train or test)",)
     parser.add_argument(
         "--detection_dir", help="Path to custom detections. Defaults to "
