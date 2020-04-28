@@ -257,12 +257,13 @@ def run_eval_mode(detection_model, eval_detector_settings):
 
     for sequence_name in train_sequence_names:
         sequence_dir = MOT16_TRAIN_DATA_DIR + sequence_name + '/'
-        detection_file = detection_dir + sequence_name + '.npy'
 
         if eval_detector_settings['Online detection']:
             if eval_detector_settings['Detector'] == 'default':
                 raise Exception(" Online detection is possible only when using SSD")
             detection_file = None
+        else:
+            detection_file = detection_dir + sequence_name + '.npy'
 
         seq_info = gather_sequence_info(sequence_dir, detection_file)
         metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
@@ -294,7 +295,8 @@ def run_eval_mode(detection_model, eval_detector_settings):
 
             else: # Use Mobilenet-SSD on the fly
                 # Detect humans
-                detection_list, detection_scores = detect_humans(detection_model, frame)
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                detection_list, detection_scores = detect_humans(detection_model, frame_rgb)
                 detection_list = cvt_to_detection_object_list(frame, detection_list, detection_scores, encoder)
 
             # Update tracker.
@@ -358,12 +360,12 @@ if __name__ == '__main__':
     # Run mode options:
     #     'CAM'  - Perform online detection and tracking on webcam stream
     #     'EVAL' - Perform evaluation on MOT16 data, store the results
-    run_mode = 'CAM'
+    run_mode = 'EVAL'
 
     # EVAL mode detector options:
     #     'default' - Use pre-computed default detections
     #     'ssd' - Use (pre-computed or online) MobileNetv2-SSD detections
     eval_detector_settings = {'Online detection': False, # Online detection is possible only while using SSD
-                              'Detector': 'default'}
+                              'Detector': 'ssd'}
 
     run(run_mode, eval_detector_settings)

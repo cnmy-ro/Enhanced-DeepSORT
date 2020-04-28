@@ -84,8 +84,8 @@ def generate_bboxes(mot_dir, detection_model, output_custom_det_dir):
         for frame_idx in sorted(image_filenames.keys()):
             logger.debug("Processing frame {}".format(frame_idx))
             frame = cv2.imread(image_filenames[frame_idx], cv2.IMREAD_COLOR)
-
-            bbox_list, detection_scores = detect_humans(detection_model, frame, min_confidence=0.5)
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            bbox_list, detection_scores = detect_humans(detection_model, frame_rgb, min_confidence=0.5)
             for bbox in bbox_list:
                 cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[0]+bbox[2],bbox[1]+bbox[3]), (0,255,0), 1)
                 output_file.write("{},-1,{},{},{},{},1,-1,-1,-1\n".format(frame_idx, bbox[0], bbox[1], bbox[2], bbox[3]))
