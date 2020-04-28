@@ -2,11 +2,12 @@
 from __future__ import division, print_function, absolute_import
 
 import argparse
-import os
+import os, sys
 
 import cv2
 import numpy as np
 
+sys.path.append('../')
 from application_util import preprocessing
 from application_util import visualization
 from deep_sort import nn_matching

@@ -360,7 +360,7 @@ if __name__ == '__main__':
     # Run mode options:
     #     'CAM'  - Perform online detection and tracking on webcam stream
     #     'EVAL' - Perform evaluation on MOT16 data, store the results
-    run_mode = 'EVAL'
+    run_mode = 'CAM'
 
     # EVAL mode detector options:
     #     'default' - Use pre-computed default detections

@@ -1,11 +1,14 @@
 # vim: expandtab:ts=4:sw=4
 import argparse
+import sys
 
 import cv2
 import numpy as np
 
 import deep_sort_app
 from deep_sort.iou_matching import iou
+
+sys.path.append('../')
 from application_util import visualization
 
 
@@ -86,10 +89,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Siamese Tracking")
     parser.add_argument(
         "--sequence_dir", help="Path to the MOTChallenge sequence directory.",
-        default=None, required=True)
+        default="../MOT16/train/MOT16-02")
     parser.add_argument(
         "--result_file", help="Tracking output in MOTChallenge file format.",
-        default=None, required=True)
+        default="../Results/Task-1/EVAL_ssd/Tracking output/MOT16-02.txt")
     parser.add_argument(
         "--detection_file", help="Path to custom detections (optional).",
         default=None)
@@ -102,7 +105,7 @@ def parse_args():
         default=None)
     parser.add_argument(
         "--show_false_alarms", help="Show false alarms as red bounding boxes.",
-        type=bool, default=False)
+        type=bool, default=True)
     return parser.parse_args()
 
 
