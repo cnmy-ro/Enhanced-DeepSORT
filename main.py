@@ -363,7 +363,7 @@ if __name__ == '__main__':
     run_mode = 'CAM'
 
     # EVAL mode detector options:
-    #     'default' - Use pre-computed default detections
+    #     'default' - Use default pre-computed (DPM-v5) detections
     #     'ssd' - Use (pre-computed or online) MobileNetv2-SSD detections
     eval_detector_settings = {'Online detection': False, # Online detection is possible only while using SSD
                               'Detector': 'ssd'}
