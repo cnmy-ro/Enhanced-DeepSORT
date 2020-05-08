@@ -1,6 +1,14 @@
-1. Collect EVAL data (with both default and SSD detections) for all MOT16 train sequences(because they have ground truths)
+COMPLETED:
 
-2. Prepare boths sets of EVAL data as specified by the motmetric library
+1. Create detection pipeline by integrating MobileNetv2-SSD code
+2. Implement CAM mode for online tracking
+3. Evaluation:
+    a. Create pre-computed bboxes and detections using SSD
+    b. Generate tracking results for MOT16 training data with EVAL mode using both default and SSD detections separately
+    c. Use Py-MOT-metrics library to generate a set of metrics for each case
 
-3. Compute metrics for both sets of EVAL data.
-   Compare.
+
+TODO:
+
+1. Check and confirm the MOT metrics
+2. Check vehicle detection code
