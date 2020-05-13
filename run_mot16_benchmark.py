@@ -4,7 +4,9 @@ import motmetrics as mm
 
 '''
 Specs:
-    2 accumulators - one for default detection results, one for SSD
+    3 accumulators - one for the ground truth,
+                     one for default detection results,
+                     one for SSD detection results
 '''
 
 train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
@@ -13,11 +15,11 @@ train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
 mot_train_dir = "./MOT16/train/"
 
 eval_dir_default = "./Results/Task-1/EVAL_default/Tracking output/"
-# output_dir_default = "./Results/Task-1/EVAL_default/Benchmark results/"
-
 eval_dir_ssd = "./Results/Task-1/EVAL_ssd/Tracking output/"
-# output_dir_ssd = "./Results/Task-1/EVAL_ssd/Benchmark results/"
 
+output_file_path = "./Results/Task-1/benchmark_results.txt"
+
+# Initialize the Py-Motmetrics accumulators
 gt_accumulator = mm.MOTAccumulator(auto_id=False)
 default_accumulator = mm.MOTAccumulator(auto_id=False)
 ssd_accumulator = mm.MOTAccumulator(auto_id=False)
@@ -82,8 +84,11 @@ for frame_idx in range(min_frame_idx, max_frame_idx+1):
 mh = mm.metrics.create()
 summary = mh.compute_many([gt_accumulator, default_accumulator, ssd_accumulator],
                           metrics=mm.metrics.motchallenge_metrics,
-                          names=['gt_self','default', 'ssd'])
+                          names=['Perfect scores (GT v/s GT)','Default detecions (DPM-v5)', 'MobileNetv2-SSD'])
 strsummary = mm.io.render_summary(summary,
                                   formatters=mh.formatters,
                                   namemap=mm.io.motchallenge_metric_names)
 print(strsummary)
+
+with open(output_file_path, 'w') as output_file:
+    output_file.write(strsummary)

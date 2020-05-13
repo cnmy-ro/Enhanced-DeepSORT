@@ -1,0 +1,4 @@
+                             IDF1    IDP    IDR   Rcll   Prcn GT MT PT ML FP    FN IDs   FM   MOTA  MOTP IDt IDa IDm
+Perfect scores (GT v/s GT) 100.0% 100.0% 100.0% 100.0% 100.0% 54 54  0  0  0     0   0    0 100.0% 0.000   0   0   0
+Default detecions (DPM-v5)  58.3%  81.4%  45.4%  55.7%  99.7% 54 11 33 10 29  7907 113  221  54.9% 0.499  35  82   7
+MobileNetv2-SSD             32.6%  96.0%  19.7%  20.5% 100.0% 54  0 25 29  0 14181  49  171  20.2% 0.662  13  42   6
