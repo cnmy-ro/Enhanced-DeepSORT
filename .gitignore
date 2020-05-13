@@ -4,11 +4,14 @@ MOT16/*
 # Saved Mobilenetv2-SSD models
 object_detection/models/*
 
-# Generated detections (.npy files) for both Default and SSD pre-computed detections 
+# Generated detections (.npy files) for both Default and SSD pre-computed detections
 resources/detections/Default/MOT16_POI_test/*
 resources/detections/Default/MOT16_POI_train/*
 resources/detections/SSD/MOT16_POI_test/*
 resources/detections/SSD/MOT16_POI_train/*
+
+# Large media files
+vehicle_tracking/vdo.avi
 
 # Py-caches
 __pycache__

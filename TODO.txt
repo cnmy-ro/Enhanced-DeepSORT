@@ -5,10 +5,15 @@ COMPLETED:
 3. Evaluation:
     a. Create pre-computed bboxes and detections using SSD
     b. Generate tracking results for MOT16 training data with EVAL mode using both default and SSD detections separately
-    c. Use Py-MOT-metrics library to generate a set of metrics for each case
+    c. Use Py-MOT-metrics library to generate a set of metrics for each case - Benchmark results saved in ./Results/Task-1/benchmark_results.txt
 
 
 TODO:
 
 1. Check and confirm the MOT metrics
 2. Check vehicle detection code
+
+
+MISC. TODO:
+
+1. DeepSORT paper benchmark results are computed using a different detector (from paper “Poi:Multiple object tracking with high performance detection and appearance feature"). Use this to reproduce the benchmark results and compare with my results.
