@@ -15,7 +15,7 @@ from torch import optim
 import torch.nn.functional as F
 import cv2,pickle,sys
 
-from deepsort import *
+from deepsort_vehicle import *
 
 
 def get_gt(image,frame_id,gt_dict):

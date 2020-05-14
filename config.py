@@ -17,7 +17,7 @@ RUN_MODE = 'humans-CAM'
 #DETECTION_MODEL_NAME = 'ssd_mobilenet_v2_coco_2018_03_29' # ~8-9 FPS
 DETECTION_MODEL_NAME = 'ssdlite_mobilenet_v2_coco_2018_05_09' # ~12 FPS
 PATH_TO_LABELS = 'object_detection/data/mscoco_label_map.pbtxt'
-MIN_CONFIDENCE = 0.5
+MIN_CONFIDENCE = 0.45
 
 
 
@@ -65,3 +65,4 @@ FRAME_HEIGHT = 480
 #                         VEHICLE TRACKING
 ###############################################################################
 
+USE_GAUSSIAN_MASK = False
