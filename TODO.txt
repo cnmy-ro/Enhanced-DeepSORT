@@ -9,12 +9,24 @@ COMPLETED:
 4. Extend the code to track vehicles in a given video file
 
 
+-----------------------------
+
+LINGERING DOUBTS:
+
+1. How reliable are the MOT16 benchmark results of Task-1? To clear this, complete evaluation of the MOT16 set (training + test) needs to be done with MISC.TODO #1 to reproduce originial DeepSORT paper results.
+
+
+-----------------------------
+
 TODO:
 
 1. Evaluate vehicle tracking qualitatively. Check if this can be done quantitatively with KITTI or similar
 2. Read the speed-up paper and implement the method
 
 
+-----------------------------
+
 MISC. TODO:
 
 1. DeepSORT paper benchmark results are computed using a different detector (from paper “Poi:Multiple object tracking with high performance detection and appearance feature"). Use this to reproduce the benchmark results and compare with my results.
+
