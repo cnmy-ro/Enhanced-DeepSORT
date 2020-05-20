@@ -16,6 +16,7 @@
 - MOT16 Multiple Object (Pedestrian) Tracking benchmark: [page](https://motchallenge.net/data/MOT16/) | [paper](https://arxiv.org/pdf/1603.00831.pdf)
 - CLEAR MOT metrics: [paper](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.367.6279&rep=rep1&type=pdf)
 - Py-MOT-metrics evaluation library: [repo](https://github.com/cheind/py-motmetrics)
+- UA-DETRAC Vehicle Tracking benchmark: [page](http://detrac-db.rit.albany.edu/Tracking)
 
 #### Trackers
 - DeepSORT pedestrian tracking: [paper](https://arxiv.org/abs/1703.07402) | [code](https://github.com/nwojke/deep_sort)

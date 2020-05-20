@@ -11,7 +11,7 @@ resources/detections/SSD/MOT16_POI_test/*
 resources/detections/SSD/MOT16_POI_train/*
 
 # Large media files
-vehicle_tracking/vdo.avi
+vdo.avi
 
 # Py-caches
 __pycache__

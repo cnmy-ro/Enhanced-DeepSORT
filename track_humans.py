@@ -142,8 +142,9 @@ def run_cam_mode(detection_model):
       t1 = time.time()
 
       # Detect humans in the frame
-      bboxes, detection_scores = detect_humans(detection_model, frame)
-      detection_list = cvt_to_detection_object_list(frame, bboxes, detection_scores, encoder)
+      frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+      bboxes, detection_scores = detect_humans(detection_model, frame_rgb)
+      detection_list = cvt_to_detection_object_list(frame_rgb, bboxes, detection_scores, encoder)
 
       # Update tracker
       tracker.predict()

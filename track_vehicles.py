@@ -2,27 +2,21 @@ import os, time, logging
 
 import numpy as np
 import cv2
-import tensorflow as tf
 import torch
 import torchvision
 
-# TF object detection imports
-from object_detection.utils import ops as utils_ops
-from object_detection.utils import label_map_util
-from application_util import preprocessing as prep
-from object_detection.utils import visualization_utils as vis_util
-
 # DeepSORT imports
-from application_util import preprocessing
-from application_util import visualization
+from application_util import visualization as dsutil_viz
+from application_util import preprocessing as dsutil_prep
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gen_det
 
+from scipy.stats import multivariate_normal
+
 # Custom imports
 import custom_utils
-from vehicle_tracking.deepsort_vehicle import *
 from config import *
 
 
@@ -114,7 +108,7 @@ def cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, gaussian_
     bboxes = np.array([d.tlwh for d in detection_list])
 
     detection_scores = np.array([d.confidence for d in detection_list])
-    indices = prep.non_max_suppression(bboxes, NMS_MAX_OVERLAP, detection_scores)
+    indices = dsutil_prep.non_max_suppression(bboxes, NMS_MAX_OVERLAP, detection_scores)
 
     detection_list = [detection_list[i] for i in indices]
 
@@ -127,8 +121,8 @@ def run_tracker(detection_model, video_path):
 
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE , NN_BUDGET)
     tracker= Tracker(metric)
-    encoder = torch.load('./vehicle_tracking/ckpts/model640.pt', map_location='cpu')
-    deepsort = deepsort_rbc(encoder)
+    encoder = torch.load('./vehicle_encoder_model/ckpts/model640.pt', map_location='cpu')
+
     gaussian_mask = get_gaussian_mask()
 
     cap = cv2.VideoCapture(video_path)
@@ -142,11 +136,13 @@ def run_tracker(detection_model, video_path):
         if ret is False: break
 
         frame = frame.astype(np.uint8)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        bboxes, detection_scores = detect_vehicles(detection_model, frame)
+        # Give RGB frame to object detector
+        bboxes, detection_scores = detect_vehicles(detection_model, frame_rgb)
 
-        detection_list = cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, gaussian_mask)
+        # Give RGB frame to extract features
+        detection_list = cvt_to_detection_objects(frame_rgb, bboxes, detection_scores, encoder, gaussian_mask)
 
         # Update tracker
         tracker.predict()
@@ -167,7 +163,7 @@ def run_tracker(detection_model, video_path):
         for track in tracks:
             if not track.is_confirmed() or track.time_since_update > 0:
                 continue
-            color = visualization.create_unique_color_uchar(track.track_id)
+            color = dsutil_viz.create_unique_color_uchar(track.track_id)
             text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
             center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
             pt2 = pt1[0] + 10 + text_size[0][0], pt1[1] + 10 + text_size[0][1]
@@ -187,6 +183,6 @@ def run_tracker(detection_model, video_path):
 
 if __name__ == '__main__':
     detection_model, category_index = custom_utils.load_detection_model(DETECTION_MODEL_NAME)
-    video_path = "./vehicle_tracking/vdo.avi"
-    run_tracker(detection_model, category_index, video_path)
+    video_path = "./vdo.avi"
+    run_tracker(detection_model, video_path)
 

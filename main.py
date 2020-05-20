@@ -2,12 +2,13 @@ import logging
 
 # Custom imports
 import custom_utils
-import track_humans
+import track_humans, track_vehicles
 from config import *
 
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
 
 def run():
     # Get SSD detector
@@ -27,7 +28,7 @@ def run():
 
     elif RUN_MODE == 'vehicles':
         video_path = "./vehicle_tracking/vdo.avi"
-        track_vehicles.run_tracker(detection_model, category_index, video_path)
+        track_vehicles.run_tracker(detection_model, video_path)
 
 ###############################################################################
 
