@@ -114,7 +114,7 @@ def create_detections(detection_mat, frame_idx, min_height=0):
     return detection_list
 
 
-def cvt_to_detection_object_list(frame, bboxes, confidence_scores, encoder):
+def cvt_to_detection_objects(frame, bboxes, confidence_scores, encoder):
     detection_list = []
     features = encoder(frame, bboxes)
     for i, bbox in enumerate(bboxes):
@@ -144,7 +144,7 @@ def run_cam_mode(detection_model):
       # Detect humans in the frame
       frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
       bboxes, detection_scores = detect_humans(detection_model, frame_rgb)
-      detection_list = cvt_to_detection_object_list(frame_rgb, bboxes, detection_scores, encoder)
+      detection_list = cvt_to_detection_objects(frame_rgb, bboxes, detection_scores, encoder)
 
       # Update tracker
       tracker.predict()
@@ -184,22 +184,23 @@ def run_cam_mode(detection_model):
 
 
 
-def run_eval_mode(detection_model, eval_detector_settings):
+def run_eval_mode(detection_model):
     train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
                             'MOT16-10', 'MOT16-11', 'MOT16-13']
 
-    if not eval_detector_settings['Online detection']:
-        if eval_detector_settings['Detector'] == 'default':
-            detection_dir = DETECTION_DIR_DEFAULT
-        elif eval_detector_settings['Detector'] == 'ssd':
-            detection_dir = DETECTION_DIR_SSD
+
+    if not EVAL_DETECTOR_SETTINGS['Online detection']:
+        if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
+            detection_dir = MOT16_DETECTION_DIR_DPM
+        elif EVAL_DETECTOR_SETTINGS['Detector'] == 'SSD':
+            detection_dir = MOT16_DETECTION_DIR_SSD
 
 
     for sequence_name in train_sequence_names:
         sequence_dir = MOT16_TRAIN_DATA_DIR + sequence_name + '/'
 
-        if eval_detector_settings['Online detection']:
-            if eval_detector_settings['Detector'] == 'default':
+        if EVAL_DETECTOR_SETTINGS['Online detection']:
+            if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
                 raise Exception(" Online detection is possible only when using SSD")
             detection_file = None
         else:
@@ -222,7 +223,7 @@ def run_eval_mode(detection_model, eval_detector_settings):
             frame = cv2.imread(seq_info['image_filenames'][frame_idx])
             t1 = time.time()
 
-            if not eval_detector_settings['Online detection']: # Use pre-computed detections
+            if not EVAL_DETECTOR_SETTINGS['Online detection']: # Use pre-computed detections
                 # Load image and generate detections.
                 detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
                 detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
@@ -237,7 +238,7 @@ def run_eval_mode(detection_model, eval_detector_settings):
                 # Detect humans
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 bboxes, detection_scores = detect_humans(detection_model, frame_rgb)
-                detection_list = cvt_to_detection_object_list(frame, bboxes, detection_scores, encoder)
+                detection_list = cvt_to_detection_objects(frame, bboxes, detection_scores, encoder)
 
             # Update tracker.
             tracker.predict()
@@ -267,8 +268,8 @@ def run_eval_mode(detection_model, eval_detector_settings):
         visualizer.run(frame_callback)
 
         # Store results.
-        if not eval_detector_settings['Online detection']:
-            output_dir = RESULTS_DIR + 'Task-1/' + 'EVAL_' + eval_detector_settings['Detector'] + '/Tracking output/'
+        if not EVAL_DETECTOR_SETTINGS['Online detection']:
+            output_dir = RESULTS_DIR + 'Task-1/' + 'EVAL_' + EVAL_DETECTOR_SETTINGS['Detector'] + '/Tracking output/'
             output_file_path = output_dir + sequence_name + '.txt'
         else:
             output_file_path = '/temp/hypotheses.txt'

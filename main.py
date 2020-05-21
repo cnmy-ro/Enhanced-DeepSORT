@@ -24,9 +24,9 @@ def run():
     if RUN_MODE == 'humans-CAM':
         track_humans.run_cam_mode(detection_model)
     elif RUN_MODE == 'humans-EVAL':
-        track_humans.run_eval_mode(detection_model, EVAL_DETECTOR_SETTINGS)
+        track_humans.run_eval_mode(detection_model)
 
-    elif RUN_MODE == 'vehicles':
+    elif RUN_MODE == 'vehicles-TEST':
         video_path = "./vehicle_tracking/vdo.avi"
         track_vehicles.run_tracker(detection_model, video_path)
 

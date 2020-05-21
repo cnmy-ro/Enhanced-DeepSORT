@@ -1,14 +1,20 @@
-# The MOT16 dataset
+# Datasets
 MOT16/*
+UA-DETRAC/DETRAC-Train-Annotations-XML/*
+UA-DETRAC/Insight-MVT_Annotation_Train/*
+UA-DETRAC/Object\ Data/*
+
 
 # Saved Mobilenetv2-SSD models
 object_detection/models/*
 
 # Generated detections (.npy files) for both Default and SSD pre-computed detections
-resources/detections/Default/MOT16_POI_test/*
-resources/detections/Default/MOT16_POI_train/*
+resources/detections/DPM/MOT16_POI_test/*
+resources/detections/DPM/MOT16_POI_train/*
 resources/detections/SSD/MOT16_POI_test/*
 resources/detections/SSD/MOT16_POI_train/*
+
+
 
 # Large media files
 vdo.avi
