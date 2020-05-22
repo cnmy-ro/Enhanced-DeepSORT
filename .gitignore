@@ -1,25 +1,20 @@
 # Datasets
-MOT16/*
-UA-DETRAC/DETRAC-Train-Annotations-XML/*
-UA-DETRAC/Insight-MVT_Annotation_Train/*
-UA-DETRAC/Object\ Data/Detections/*
-UA-DETRAC/Object\ Data/Bboxes/DPM/*
-
+Data/MOT16/*
+Data/UA-DETRAC/DETRAC-Train-Annotations-XML/*
+Data/UA-DETRAC/Insight-MVT_Annotation_Train/*
 
 
 # Saved Mobilenetv2-SSD models
 object_detection/models/*
 
-# Generated detections (.npy files) for both Default and SSD pre-computed detections
-resources/detections/DPM/MOT16_POI_test/*
-resources/detections/DPM/MOT16_POI_train/*
-resources/detections/SSD/MOT16_POI_test/*
-resources/detections/SSD/MOT16_POI_train/*
 
+# Generated detections (.npy files)
+*.npy
 
 
 # Large media files
 vdo.avi
+
 
 # Py-caches
 __pycache__

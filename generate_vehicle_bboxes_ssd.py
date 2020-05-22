@@ -2,7 +2,6 @@ import os, sys, logging
 
 import numpy as np
 import cv2
-import tensorflow as tf
 
 #sys.path.append('../')
 from object_detection.utils import ops as utils_ops
@@ -42,13 +41,14 @@ def detect_vehicles(detection_model, frame):
     return bbox_list, detection_scores
 
 
-def generate_bboxes(vehicle_data_dir, detection_model, output_dir):
-    for sequence in sorted(os.listdir(vehicle_data_dir))[9:]: #####
+def generate_bboxes(detection_model, output_dir):
+    sequences = sorted(os.listdir(VEHICLE_DATA_DIR))
+    sequences = sequences[6:7]
+    print(sequences)
+
+    for sequence in sequences: #####
         logger.debug("Processing %s" % sequence)
         sequence_dir = os.path.join(vehicle_data_dir, sequence)
-        # image_dir = os.path.join(sequence_dir, "img1")
-        # image_filenames = {int(os.path.splitext(f)[0]): os.path.join(image_dir, f)
-        #                    for f in os.listdir(image_dir)}
 
         image_filenames  = {i+1 : os.path.join(sequence_dir,f) for i, f in enumerate(sorted(os.listdir(sequence_dir)))}
 
@@ -72,10 +72,7 @@ def generate_bboxes(vehicle_data_dir, detection_model, output_dir):
 ###############################################################################
 
 if __name__ == '__main__':
-    vehicle_data_dir = "UA-DETRAC/Insight-MVT_Annotation_Train/"
-    detection_model_name = 'ssdlite_mobilenet_v2_coco_2018_05_09'
-    # detection_model_dir = 'object_detection/models/'+ model_name + '/saved_model'
     output_dir = "UA-DETRAC/Object Data/Bboxes/SSD/"
 
-    detection_model, category_index = custom_utils.load_detection_model(detection_model_name)
-    generate_bboxes(vehicle_data_dir, detection_model, output_dir)
+    detection_model, category_index = custom_utils.load_detection_model(DETECTION_MODEL_NAME)
+    generate_bboxes(detection_model, output_dir)

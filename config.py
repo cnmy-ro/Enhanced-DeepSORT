@@ -14,8 +14,8 @@ RUN_MODE = 'humans-CAM'
     #     'DPM' - Use default pre-computed (DPM-v5) detections
     #     'SSD' - Use (pre-computed or online) MobileNetv2-SSD detections
 
-EVAL_DETECTOR_SETTINGS = {'Detector': 'DPM',
-                          'Online detection': False} # Online detection is possible only while using SSD}
+EVAL_DETECTOR_SETTINGS = {'Detector': 'SSD',
+                          'Online detection': True} # Online detection is possible only while using SSD}
 
 
 ################################################################################
@@ -24,10 +24,8 @@ EVAL_DETECTOR_SETTINGS = {'Detector': 'DPM',
 
 #DETECTION_MODEL_NAME = 'ssd_mobilenet_v2_coco_2018_03_29' # ~8-9 FPS
 DETECTION_MODEL_NAME = 'ssdlite_mobilenet_v2_coco_2018_05_09' # ~12 FPS
-PATH_TO_LABELS = 'object_detection/data/mscoco_label_map.pbtxt'
+PATH_TO_LABELS = './object_detection/data/mscoco_label_map.pbtxt'
 MIN_CONFIDENCE = 0.45
-
-
 
 
 ###############################################################################
@@ -45,22 +43,22 @@ RESULTS_DIR = './Results/'
 # -----------------------------------------------------------------------------
 #                          Human tracking
 # -----------------------------------------------------------------------------
-MOT16_TRAIN_DATA_DIR = './MOT16/train/'
-MOT16_DETECTION_DIR_DPM = './resources/detections/DPM/MOT16_POI_train/'
-MOT16_DETECTION_DIR_SSD = './resources/detections/SSD/MOT16_POI_train/'
+MOT16_TRAIN_DATA_DIR = './Data/MOT16/train/'
+MOT16_DETECTION_DIR_DPM = './Resources/Humans/Detections/DPM/MOT16_POI_train/'
+MOT16_DETECTION_DIR_SSD = './Resources/Humans/Detections/SSD/MOT16_POI_train/'
 
-
+HUMAN_ENCODER_PATH = './Resources/Humans/human_encoder_model/mars-small128.pb'
 
 
 # -----------------------------------------------------------------------------
 #                         Vehicle tracking
 # -----------------------------------------------------------------------------
-USE_GAUSSIAN_MASK = False
-VEHICLE_DATA_DIR = "UA-DETRAC/Insight-MVT_Annotation_Train/"
-VEHICLE_DETECTION_DIR_DPM = "UA-DETRAC/Object Data/Detections/DPM/"
-VEHICLE_DETECTION_DIR_SSD = "UA-DETRAC/Object Data/Detections/SSD/"
+USE_GAUSSIAN_MASK = True
+VEHICLE_DATA_DIR = "./Data/UA-DETRAC/Insight-MVT_Annotation_Train/"
+VEHICLE_DETECTION_DIR_DPM = "./Resources/Vehicles/Detections/DPM/"
+VEHICLE_DETECTION_DIR_SSD = "./Resources/Vehicles/Detections/SSD/"
 
-
+VEHICLE_ENCODER_PATH = './Resources/Vehicles/vehicle_encoder_model/ckpts/model640.pt'
 
 
 ###############################################################################

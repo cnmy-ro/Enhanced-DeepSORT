@@ -5,6 +5,8 @@ import cv2
 import torch
 import torchvision
 
+from config import *
+
 ###############################################################################
 
 def pre_process(frame, bboxes):
@@ -20,25 +22,30 @@ def pre_process(frame, bboxes):
             try:
                 crop = frame[y:y+h, x:x+w, :]
                 crop = transforms(crop)
+
+
                 crops.append(crop)
             except:
                 print("except-ing")
                 continue
 
         crops = torch.stack(crops)
+
         return crops
 
 
-def generate_detections(encoder, data_dir, output_dir, detection_dir=None):
+def generate_detections(encoder, output_dir, detection_dir=None):
 
-    for sequence in sorted(os.listdir(data_dir)):#####
+    sequences = sorted(os.listdir(VEHICLE_DATA_DIR))
+    sequences = sequences[6:20] # First 20 sequences
+
+    for sequence in sequences:
         print("Processing %s -----------------------------------" % sequence)
-        sequence_dir = os.path.join(data_dir, sequence) + '/'
+        sequence_dir = os.path.join(VEHICLE_DATA_DIR, sequence) + '/'
 
         image_filenames = sorted(os.listdir(sequence_dir))
         #print("Image names:", image_filenames)
-
-        detection_file = detection_dir + sequence + "_Det_DPM.txt"
+        detection_file = detection_dir + sequence + ".txt"  #"_Det_DPM.txt"
         detections_in = np.loadtxt(detection_file, delimiter=',')
 
         detections_out = []
@@ -79,15 +86,13 @@ def generate_detections(encoder, data_dir, output_dir, detection_dir=None):
 
 if __name__ == '__main__':
 
-    detector_name = 'DPM'
+    detector_name = 'SSD'
 
-    data_dir = "UA-DETRAC/Insight-MVT_Annotation_Train/"
-    bbox_dir = "UA-DETRAC/Object Data/Bboxes/" + detector_name + "/"
-    output_dir = "UA-DETRAC/Object Data/Detections/" + detector_name + "/"
+    bbox_dir = "./Resources/Vehicles/Bboxes/" + detector_name + "/"
+    output_dir = "./Resources/Vehicles/Detections/" + detector_name + "/"
 
-
-    encoder = torch.load('./vehicle_encoder_model/ckpts/model640.pt', map_location='cpu')
+    encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
     encoder.eval()
 
-    generate_detections(encoder, data_dir, output_dir, detection_dir=bbox_dir)
+    generate_detections(encoder, output_dir, detection_dir=bbox_dir)
 

@@ -5,23 +5,23 @@ import motmetrics as mm
 '''
 Specs:
     3 accumulators - one for the ground truth,
-                     one for default detection results,
+                     one for default DPM detection results,
                      one for SSD detection results
 '''
 
 train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
                         'MOT16-10', 'MOT16-11', 'MOT16-13']
 
-mot_train_dir = "./MOT16/train/"
+mot_train_dir = ".Data/MOT16/train/"
 
-eval_dir_default = "./Results/Task-1/EVAL_default/Tracking output/"
-eval_dir_ssd = "./Results/Task-1/EVAL_ssd/Tracking output/"
+eval_dir_dpm = "./Results/Task-1/EVAL_DPM/Tracking output/"
+eval_dir_ssd = "./Results/Task-1/EVAL_SSD/Tracking output/"
 
 output_file_path = "./Results/Task-1/benchmark_results.txt"
 
 # Initialize the Py-Motmetrics accumulators
 gt_accumulator = mm.MOTAccumulator(auto_id=True)
-default_accumulator = mm.MOTAccumulator(auto_id=True)
+dpm_accumulator = mm.MOTAccumulator(auto_id=True)
 ssd_accumulator = mm.MOTAccumulator(auto_id=True)
 
 
@@ -37,8 +37,8 @@ for sequence_name in train_sequence_names:
     ground_truth = ground_truth[:, :6]
     ground_truth = np.array(sorted(ground_truth, key=lambda gt: gt[0]))
 
-    eval_result_default_path = eval_dir_default + sequence_name + '.txt'
-    eval_result_default = np.loadtxt(eval_result_default_path, delimiter=',')
+    eval_result_dpm_path = eval_dir_dpm + sequence_name + '.txt'
+    eval_result_dpm = np.loadtxt(eval_result_dpm_path, delimiter=',')
 
     eval_result_ssd_path = eval_dir_ssd + sequence_name + '.txt'
     eval_result_ssd = np.loadtxt(eval_result_ssd_path, delimiter=',')
@@ -52,7 +52,7 @@ for sequence_name in train_sequence_names:
         gt_frame_object_ids = gt_frame[:,1]
         gt_frame_bboxes = gt_frame[:, 2:6]
 
-        default_frame = eval_result_default[eval_result_default[:,0]==frame_idx]
+        default_frame = eval_result_dpm[eval_result_dpm[:,0]==frame_idx]
         default_frame_object_ids = default_frame[:,1]
         default_frame_bboxes = default_frame[:,2:6]
 
@@ -68,7 +68,7 @@ for sequence_name in train_sequence_names:
                               self_dist_matrix)
 
         default_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, default_frame_bboxes)
-        default_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
+        dpm_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
                                default_frame_object_ids, # Predicted objects (IDs)
                                default_distance_matrix)
 
@@ -80,9 +80,9 @@ for sequence_name in train_sequence_names:
 
 
 mh = mm.metrics.create()
-summary = mh.compute_many([gt_accumulator, default_accumulator, ssd_accumulator],
+summary = mh.compute_many([gt_accumulator, dpm_accumulator, ssd_accumulator],
                           metrics=mm.metrics.motchallenge_metrics,
-                          names=['Perfect scores (GT v/s GT)','Default detecions (DPM-v5)', 'MobileNetv2-SSD'])
+                          names=['Perfect scores (GT v/s GT)','Default detecions (dpm-v5)', 'MobileNetv2-ssd'])
 strsummary = mm.io.render_summary(summary,
                                   formatters=mh.formatters,
                                   namemap=mm.io.motchallenge_metric_names)

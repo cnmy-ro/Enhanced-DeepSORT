@@ -10,12 +10,12 @@ from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
 # DeepSORT imports
-from application_util import preprocessing
-from application_util import visualization
+from deep_sort_utils import preprocessing as dsutil_prep
+from deep_sort_utils import visualization as dsutil_viz
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
-from tools import generate_detections as gen_det
+from Tools import generate_detections as gen_det
 
 # Custom imports
 import custom_utils
@@ -134,7 +134,7 @@ def run_cam_mode(detection_model):
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
     tracker = Tracker(metric)
 
-    encoder = gen_det.create_box_encoder('./resources/networks/mars-small128.pb', batch_size=32)
+    encoder = gen_det.create_box_encoder(HUMAN_ENCODER_PATH, batch_size=32)
 
     # Cam loop
     while True:
@@ -168,7 +168,7 @@ def run_cam_mode(detection_model):
       for track in tracks:
           if not track.is_confirmed() or track.time_since_update > 0:
               continue
-          color = visualization.create_unique_color_uchar(track.track_id)
+          color = dsutil_viz.create_unique_color_uchar(track.track_id)
           text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
           center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
           pt2 = pt1[0] + 10 + text_size[0][0], pt1[1] + 10 + text_size[0][1]
@@ -211,7 +211,7 @@ def run_eval_mode(detection_model):
         tracker = Tracker(metric)
         results = []
 
-        encoder = gen_det.create_box_encoder('resources/networks/mars-small128.pb', batch_size=32)
+        encoder = gen_det.create_box_encoder(HUMAN_ENCODER_PATH, batch_size=32)
 
         n_frames = len(seq_info['image_filenames'])
 
@@ -231,7 +231,7 @@ def run_eval_mode(detection_model):
                 # Run non-maxima suppression.
                 boxes = np.array([d.tlwh for d in detection_list])
                 scores = np.array([d.confidence for d in detection_list])
-                indices = preprocessing.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
+                indices = dsutil_prep.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
                 detection_list = [detection_list[i] for i in indices]
 
             else: # Use Mobilenet-SSD on the fly
