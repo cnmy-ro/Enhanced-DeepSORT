@@ -2,7 +2,9 @@
 MOT16/*
 UA-DETRAC/DETRAC-Train-Annotations-XML/*
 UA-DETRAC/Insight-MVT_Annotation_Train/*
-UA-DETRAC/Object\ Data/*
+UA-DETRAC/Object\ Data/Detections/*
+UA-DETRAC/Object\ Data/Bboxes/DPM/*
+
 
 
 # Saved Mobilenetv2-SSD models

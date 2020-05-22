@@ -20,8 +20,8 @@ LINGERING DOUBTS:
 
 TODO:
 
-1. Evaluate vehicle tracking qualitatively. Check if this can be done quantitatively with KITTI or similar
-2. Read the speed-up paper and implement the method
+1. Benchmark the vehicle tracker on the dataset (only the first 20 sequences of training set) for both the default DPM and the SSD detections
+
 
 
 -----------------------------

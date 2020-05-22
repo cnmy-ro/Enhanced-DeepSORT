@@ -31,7 +31,7 @@ def pre_process(frame, bboxes):
 
 def generate_detections(encoder, data_dir, output_dir, detection_dir=None):
 
-    for sequence in sorted(os.listdir(data_dir))[13:]:
+    for sequence in sorted(os.listdir(data_dir)):#####
         print("Processing %s -----------------------------------" % sequence)
         sequence_dir = os.path.join(data_dir, sequence) + '/'
 
@@ -40,7 +40,6 @@ def generate_detections(encoder, data_dir, output_dir, detection_dir=None):
 
         detection_file = detection_dir + sequence + "_Det_DPM.txt"
         detections_in = np.loadtxt(detection_file, delimiter=',')
-        detections_in = detections_in[detections_in[:,-1] > 0.1] # 10% confidence threshold
 
         detections_out = []
 
@@ -48,8 +47,8 @@ def generate_detections(encoder, data_dir, output_dir, detection_dir=None):
         #min_frame_idx = frame_indices.astype(np.int).min()
         max_frame_idx = frame_indices.astype(np.int).max()
 
-        for frame_idx in range(1, max_frame_idx):
-            print("Frame %05d/%05d" % (frame_idx, max_frame_idx))
+        for frame_idx in range(1, max_frame_idx+1):
+            print("Frame %05d/%05d" % (frame_idx, max_frame_idx), end='')
             mask = frame_indices == frame_idx
             rows = detections_in[mask]
 
@@ -69,16 +68,11 @@ def generate_detections(encoder, data_dir, output_dir, detection_dir=None):
             detections_out += [np.r_[(row, feature)] for row, feature
                                in zip(rows, features)]
 
+            #if frame_idx == 20: break ####
+            print("  --  Detections shape", np.array(detections_out).shape)#####
         output_filename = os.path.join(output_dir, "%s.npy" % sequence)
-        np.save(output_filename, np.asarray(detections_out))
+        np.save(output_filename, np.asarray(detections_out), allow_pickle=True)
 
-
-###############################################################################
-
-## DPM bboxes
-dpm_bboxes = np.loadtxt("UA-DETRAC/Object Data/Bboxes/DPM/MVI_20011_Det_DPM.txt", delimiter=',')
-dpm_bboxes = dpm_bboxes[dpm_bboxes[:,0] == 1]
-dpm_bboxes = dpm_bboxes[dpm_bboxes[:,-1] > 0.1] # 10% confidence threshold
 
 
 ###############################################################################

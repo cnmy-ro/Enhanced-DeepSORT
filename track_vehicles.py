@@ -41,8 +41,8 @@ def detect_vehicles(detection_model, frame):
     for i, box in enumerate(all_bboxes):
         det_class = all_detection_classes[i]
         det_score = all_detection_scores[i]
-        # If the detected object is a vehicle with a confidence of at least MIN_CONFIDENCE
-        if (det_class == 3 or det_class == 6 or det_class == 8) and det_score > MIN_CONFIDENCE:
+        # If the detected object is a vehicle
+        if (det_class == 3 or det_class == 6 or det_class == 8):
             y1,x1,y2,x2 = int(box[0]*frame.shape[0]), int(box[1]*frame.shape[1]), int(box[2]*frame.shape[0]), int(box[3]*frame.shape[1])
             bbox_list.append(tuple([x1,y1,x2-x1,y2-y1])) # TLWH format bboxes
             detection_scores.append(det_score)
@@ -92,12 +92,14 @@ def pre_process(frame, bboxes):
 
 def gather_sequence_info(sequence_dir, detection_file):
     #image_dir = os.path.join(sequence_dir, "img1")
-    image_dir = sequence_dir
     # image_filenames = {int(os.path.splitext(f)[0]): os.path.join(image_dir, f)
     #                    for f in os.listdir(image_dir)}
-    image_filenames = sorted(os.listdir(image_dir))
+    #image_filenames = sorted(os.listdir(sequence_dir))
+    image_filenames  = {i+1 : os.path.join(sequence_dir,f) for i, f in enumerate(sorted(os.listdir(sequence_dir)))}
+    print("image_filenames ",image_filenames )
     # groundtruth_file = os.path.join(sequence_dir, "gt/gt.txt")
-    # groundtruth_file = "UA-DETRAC/Object Data/ground_truths/" + image_filenames.split('.')[0] + ".txt"
+    groundtruth_file = "UA-DETRAC/Object Data/ground_truths/" + sequence_dir.split('/')[-2] + ".txt"
+    print("groundtruth_file", groundtruth_file)
 
     detections = None
     if detection_file is not None:
@@ -112,34 +114,36 @@ def gather_sequence_info(sequence_dir, detection_file):
     #     image_size = image.shape
     # else:
     #     image_size = None
+    image = cv2.imread(image_filenames[1])
+    image_size = image.shape
 
-    # if len(image_filenames) > 0:
-    #     min_frame_idx = min(image_filenames.keys())
-    #     max_frame_idx = max(image_filenames.keys())
-    # else:
-    #     min_frame_idx = int(detections[:, 0].min())
-    #     max_frame_idx = int(detections[:, 0].max())
+    if len(image_filenames) > 0:
+        min_frame_idx = min(image_filenames.keys())
+        max_frame_idx = max(image_filenames.keys())
+    else:
+        min_frame_idx = int(detections[:, 0].min())
+        max_frame_idx = int(detections[:, 0].max())
 
-    min_frame_idx = int(detections[:, 0].min())
-    max_frame_idx = int(detections[:, 0].max())
+
 
     feature_dim = detections.shape[1] - 10 if detections is not None else 0
     seq_info = {"sequence_name": os.path.basename(sequence_dir),
                 "image_filenames": image_filenames,
                 "detections": detections,
-                "groundtruth": None,
-                "image_size": None,
+                "groundtruth": groundtruth_file,
+                "image_size": image_size,
                 "min_frame_idx": min_frame_idx,
                 "max_frame_idx": max_frame_idx,
                 "feature_dim": feature_dim,
-                "update_ms": None
+                "update_ms": 5
                 }
     return seq_info
 
 
 def create_detections(detection_mat, frame_idx, min_height=0):
+    print(detection_mat.shape)
     frame_indices = detection_mat[:, 0].astype(np.int)
-    mask = frame_indices == frame_idx
+    mask = frame_indices == (frame_idx-1)
 
     detection_list = []
     for row in detection_mat[mask]:
@@ -240,8 +244,12 @@ def run_tracker(detection_model, video_path):
     cv2. destroyAllWindows()
     cap.release()
 
+
+
 def run_eval_mode(detection_model):
-    sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))[:10]
+    sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR)) #####
+
+    encoder = torch.load('./vehicle_encoder_model/ckpts/model640.pt', map_location='cpu')
 
     if not EVAL_DETECTOR_SETTINGS['Online detection']:
         if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
@@ -249,6 +257,7 @@ def run_eval_mode(detection_model):
         elif EVAL_DETECTOR_SETTINGS['Detector'] == 'SSD':
             detection_dir = VEHICLE_DETECTION_DIR_SSD
 
+    gaussian_mask = get_gaussian_mask()
 
     for sequence_name in sequence_names:
         sequence_dir = VEHICLE_DATA_DIR + sequence_name + '/'
@@ -260,67 +269,129 @@ def run_eval_mode(detection_model):
         else:
             detection_file = detection_dir + sequence_name + '.npy'
 
-        seq_info = gather_sequence_info(sequence_dir, detection_file)
+        # seq_info = gather_sequence_info(sequence_dir, detection_file)
         metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
         tracker = Tracker(metric)
         results = []
 
-        #encoder = gen_det.create_box_encoder('resources/networks/mars-small128.pb', batch_size=32)
-        encoder = torch.load('./vehicle_encoder_model/ckpts/model640.pt', map_location='cpu')
 
-        n_frames = len(seq_info['image_filenames'])
+
+        # n_frames = len(seq_info['image_filenames'])
+
+        img_file_names = sorted(os.listdir(VEHICLE_DATA_DIR+sequence_name))
+        n_frames = len(img_file_names)
 
         logger.debug(detection_file)
 
-        def frame_callback(vis, frame_idx):
-            logger.info("Processing Sequence {}, Frame {:05d}" .format(sequence_name, frame_idx))
+        # def frame_callback(vis, frame_idx):
+        #     logger.info("Processing Sequence {}, Frame {:05d}" .format(sequence_name, frame_idx))
 
-            frame = cv2.imread(seq_info['image_filenames'][frame_idx])
+        #     frame = cv2.imread(seq_info['image_filenames'][frame_idx])
+        #     t1 = time.time()
+
+        #     if not EVAL_DETECTOR_SETTINGS['Online detection']: # Use pre-computed detections
+        #         # Load image and generate detections.
+        #         detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
+        #         detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
+
+        #         # Run non-maxima suppression.
+        #         boxes = np.array([d.tlwh for d in detection_list])
+        #         scores = np.array([d.confidence for d in detection_list])
+        #         indices = dsutil_prep.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
+        #         detection_list = [detection_list[i] for i in indices]
+
+        #     else: # Use Mobilenet-SSD on the fly
+        #         # Detect humans
+        #         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        #         bboxes, detection_scores = detect_vehicles(detection_model, frame_rgb)
+        #         detection_list = cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, gaussian_mask)
+
+        #     # Update tracker.
+        #     tracker.predict()
+        #     tracker.update(detection_list)
+
+        #     # FPS counter
+        #     fps = 1/(time.time()-t1)
+
+        #     # Update visualization.
+        #     if DISPLAY:
+        #         vis.set_image(frame.copy())
+        #         vis.draw_detections(detection_list)
+        #         vis.draw_trackers(tracker.tracks)
+
+        #     # Store results.
+        #     for track in tracker.tracks:
+        #         if not track.is_confirmed() or track.time_since_update > 1:
+        #             continue
+        #         bbox = track.to_tlwh()
+        #         results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3], fps])
+
+        # # Run tracker.
+        # if DISPLAY:
+        #     visualizer = dsutil_viz.Visualization(seq_info, update_ms=5)
+        # else:
+        #     visualizer = dsutil_viz.NoVisualization(seq_info)
+        # visualizer.run(frame_callback)
+
+
+        for frame_idx in range(1, n_frames+1):
             t1 = time.time()
 
-            if not EVAL_DETECTOR_SETTINGS['Online detection']: # Use pre-computed detections
-                # Load image and generate detections.
-                detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
-                detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
+            img_file_path = VEHICLE_DATA_DIR + sequence_name + '/' + img_file_names[frame_idx-1]
+            logger.debug(img_file_path)
+            frame = cv2.imread(img_file_path)
+            detections_list = np.load(detection_file, allow_pickle=True)
+            detection_list = create_detections(detections_list, frame_idx, MIN_DETECTION_HEIGHT)
 
-                # Run non-maxima suppression.
-                boxes = np.array([d.tlwh for d in detection_list])
-                scores = np.array([d.confidence for d in detection_list])
-                indices = dsutil_prep.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
-                detection_list = [detection_list[i] for i in indices]
+            detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
 
-            else: # Use Mobilenet-SSD on the fly
-                # Detect humans
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                bboxes, detection_scores = detect_humans(detection_model, frame_rgb)
-                detection_list = cvt_to_detection_objects(frame, bboxes, detection_scores, encoder)
+            # Run non-maxima suppression.
+            boxes = np.array([d.tlwh for d in detection_list])
+            scores = np.array([d.confidence for d in detection_list])
+            indices = dsutil_prep.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
+            detection_list = [detection_list[i] for i in indices]
 
             # Update tracker.
             tracker.predict()
             tracker.update(detection_list)
 
-            # FPS counter
-            fps = 1/(time.time()-t1)
+            # Update visualization
+            output_img = frame.copy()
 
-            # Update visualization.
-            if DISPLAY:
-                vis.set_image(frame.copy())
-                vis.draw_detections(detection_list)
-                vis.draw_trackers(tracker.tracks)
+            ## Visualize all detections
+            for i, detection in enumerate(detection_list):
+                x,y,w,h = detection.tlwh
+                pt1 = int(x), int(y)
+                pt2 = int(x + w), int(y + h)
+                cv2.rectangle(output_img, pt1, pt2, (0, 0, 255), 2)
+
+            ## Visualize confirmed tracks
+            tracks = tracker.tracks
+            for track in tracks:
+                # if not track.is_confirmed() or track.time_since_update > 0:
+                #     continue
+                color = dsutil_viz.create_unique_color_uchar(track.track_id)
+                text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
+                center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
+                pt2 = pt1[0] + 10 + text_size[0][0], pt1[1] + 10 + text_size[0][1]
+                cv2.rectangle(output_img, pt1, pt2, color, -1)
+                cv2.putText(output_img, str(track.track_id), center, cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
+
+            fps = 1/(time.time()-t1)
+            cv2.putText(output_img, 'FPS: {:.1f}'.format(fps), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+            cv2.imshow('detection output', output_img)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
 
             # Store results.
-            for track in tracker.tracks:
+            for track in tracks:
                 if not track.is_confirmed() or track.time_since_update > 1:
                     continue
                 bbox = track.to_tlwh()
                 results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3], fps])
 
-        # Run tracker.
-        if DISPLAY:
-            visualizer = dsutil_viz.Visualization(seq_info, update_ms=5)
-        else:
-            visualizer = dsutil_viz.NoVisualization(seq_info)
-        visualizer.run(frame_callback)
+        cv2. destroyAllWindows()
 
         # Store results.
         if not EVAL_DETECTOR_SETTINGS['Online detection']:
