@@ -28,6 +28,7 @@ TODO:
 
 2. Perform sensitivity analysis for both human and vehicle tracking
 
+3. Add SSD online detection mode for vehicles -- for measuring online operation FPS
 
 -----------------------------
 
