@@ -11,11 +11,12 @@ RUN_MODE = 'humans-CAM'
 
 
 # EVAL mode detector options:
-    #     'DPM' - Use default pre-computed (DPM-v5) detections
-    #     'SSD' - Use (pre-computed or online) MobileNetv2-SSD detections
+    #     'DPM'  - Use default pre-computed DPM-v5 detections
+    #     'SSD'  - Use (pre-computed or online) MobileNetv2-SSD detections
+    #     'RCNN' - Use default pre-computed RCNN detections -- only for vehicle tracking
 
-EVAL_DETECTOR_SETTINGS = {'Detector': 'SSD',
-                          'Online detection': True} # Online detection is possible only while using SSD}
+EVAL_DETECTOR_SETTINGS = {'Detector': 'RCNN',
+                          'Online detection': False} # Online detection is possible only while using SSD}
 
 
 ################################################################################
@@ -25,12 +26,14 @@ EVAL_DETECTOR_SETTINGS = {'Detector': 'SSD',
 #DETECTION_MODEL_NAME = 'ssd_mobilenet_v2_coco_2018_03_29' # ~8-9 FPS
 DETECTION_MODEL_NAME = 'ssdlite_mobilenet_v2_coco_2018_05_09' # ~12 FPS
 PATH_TO_LABELS = './object_detection/data/mscoco_label_map.pbtxt'
-MIN_CONFIDENCE = 0.45
+
 
 
 ###############################################################################
 #                             TRACKING
 ###############################################################################
+
+MIN_CONFIDENCE = 0.6
 
 NMS_MAX_OVERLAP = 1.0
 MIN_DETECTION_HEIGHT = 0
@@ -55,8 +58,9 @@ HUMAN_ENCODER_PATH = './Resources/Humans/human_encoder_model/mars-small128.pb'
 # -----------------------------------------------------------------------------
 USE_GAUSSIAN_MASK = True
 VEHICLE_DATA_DIR = "./Data/UA-DETRAC/Insight-MVT_Annotation_Train/"
-VEHICLE_DETECTION_DIR_DPM = "./Resources/Vehicles/Detections/DPM/"
-VEHICLE_DETECTION_DIR_SSD = "./Resources/Vehicles/Detections/SSD/"
+# VEHICLE_DETECTION_DIR_DPM = "./Resources/Vehicles/Detections/DPM/"
+# VEHICLE_DETECTION_DIR_SSD = "./Resources/Vehicles/Detections/SSD/"
+VEHICLE_DETECTION_DIR_BASE = "./Resources/Vehicles/Detections/"
 
 VEHICLE_ENCODER_PATH = './Resources/Vehicles/vehicle_encoder_model/ckpts/model640.pt'
 

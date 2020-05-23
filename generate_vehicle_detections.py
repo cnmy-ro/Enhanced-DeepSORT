@@ -34,18 +34,20 @@ def pre_process(frame, bboxes):
         return crops
 
 
-def generate_detections(encoder, output_dir, detection_dir=None):
+def generate_detections(encoder, output_dir, bboxes_dir=None):
 
     sequences = sorted(os.listdir(VEHICLE_DATA_DIR))
-    sequences = sequences[6:20] # First 20 sequences
+    sequences = sequences[:20] # First 20 sequences
 
-    for sequence in sequences:
+    bbox_file_names = sorted(os.listdir(bboxes_dir))
+
+    for s, sequence in enumerate(sequences):
         print("Processing %s -----------------------------------" % sequence)
         sequence_dir = os.path.join(VEHICLE_DATA_DIR, sequence) + '/'
 
         image_filenames = sorted(os.listdir(sequence_dir))
-        #print("Image names:", image_filenames)
-        detection_file = detection_dir + sequence + ".txt"  #"_Det_DPM.txt"
+
+        detection_file = bboxes_dir + bbox_file_names[s]
         detections_in = np.loadtxt(detection_file, delimiter=',')
 
         detections_out = []
@@ -86,7 +88,7 @@ def generate_detections(encoder, output_dir, detection_dir=None):
 
 if __name__ == '__main__':
 
-    detector_name = 'SSD'
+    detector_name = 'RCNN'
 
     bbox_dir = "./Resources/Vehicles/Bboxes/" + detector_name + "/"
     output_dir = "./Resources/Vehicles/Detections/" + detector_name + "/"
@@ -94,5 +96,5 @@ if __name__ == '__main__':
     encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
     encoder.eval()
 
-    generate_detections(encoder, output_dir, detection_dir=bbox_dir)
+    generate_detections(encoder, output_dir, bboxes_dir=bbox_dir)
 

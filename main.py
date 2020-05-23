@@ -21,6 +21,7 @@ def run():
     logger.debug(detection_model.inputs)
     logger.debug(detection_model.output_dtypes)
 
+    # Run options
     if RUN_MODE == 'humans-CAM':
         track_humans.run_cam_mode(detection_model)
     elif RUN_MODE == 'humans-EVAL':
@@ -28,7 +29,9 @@ def run():
 
     elif RUN_MODE == 'vehicles-TEST':
         video_path = "./vehicle_tracking/vdo.avi"
-        track_vehicles.run_tracker(detection_model, video_path)
+        track_vehicles.run_test_mode(detection_model, video_path)
+    elif RUN_MODE == 'vehicles-EVAL':
+        track_vehicles.run_eval_mode(detection_model)
 
 ###############################################################################
 

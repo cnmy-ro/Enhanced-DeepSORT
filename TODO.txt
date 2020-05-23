@@ -2,11 +2,14 @@ COMPLETED:
 
 1. Create detection pipeline by integrating MobileNetv2-SSD code
 2. Implement CAM mode for online tracking
-3. Evaluation:
-    a. Create pre-computed bboxes and detections using SSD
+3. Evaluation on MOT16:
+    a. Generate pre-computed bboxes + detections using SSD
     b. Generate tracking results for MOT16 training data with EVAL mode using both default and SSD detections separately
     c. Use Py-MOT-metrics library to generate a set of metrics for each case - Benchmark results saved in ./Results/Task-1/benchmark_results.txt
 4. Extend the code to track vehicles in a given video file
+5. Evaluation on UA-DETRAC:
+    a. Generate detections using given DPM bboxes, and pre-computed bboxes + detections using SSD
+
 
 
 -----------------------------
@@ -20,8 +23,8 @@ LINGERING DOUBTS:
 
 TODO:
 
-1. Benchmark the vehicle tracker on the dataset (only the first 20 sequences of training set) for both the default DPM and the SSD detections
-
+1. Benchmark the vehicle tracker on the dataset (only the first 20 sequences of training set) for the default DPM, default R-CNN and custom SSD detections
+2. Perform sensitivity analysis for both human and vehicle tracking
 
 
 -----------------------------

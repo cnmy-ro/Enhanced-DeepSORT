@@ -131,7 +131,7 @@ def cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, gaussian_
 
 ###############################################################################
 
-def run_tracker(detection_model, video_path):
+def run_test_mode(detection_model, video_path):
 
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE , NN_BUDGET)
     tracker= Tracker(metric)
@@ -203,17 +203,21 @@ def run_tracker(detection_model, video_path):
 
 
 def run_eval_mode(detection_model):
-    sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))[1:]#####
+    sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))
 
     encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
 
     if not EVAL_DETECTOR_SETTINGS['Online detection']:
-        if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
-            detection_dir = VEHICLE_DETECTION_DIR_DPM
-        elif EVAL_DETECTOR_SETTINGS['Detector'] == 'SSD':
-            detection_dir = VEHICLE_DETECTION_DIR_SSD
+        # if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
+        #     detection_dir = VEHICLE_DETECTION_DIR_DPM
+        # elif EVAL_DETECTOR_SETTINGS['Detector'] == 'SSD':
+        #     detection_dir = VEHICLE_DETECTION_DIR_SSD
+        detection_dir = VEHICLE_DETECTION_DIR_BASE + EVAL_DETECTOR_SETTINGS['Detector'] + '/'
 
     gaussian_mask = get_gaussian_mask()
+
+    # Print parameters before starting ----------------
+    logging.info("Detections: {}".format(EVAL_DETECTOR_SETTINGS['Detector']))
 
     for sequence_name in sequence_names:
         sequence_dir = VEHICLE_DATA_DIR + sequence_name + '/'
@@ -225,14 +229,9 @@ def run_eval_mode(detection_model):
         else:
             detection_file = detection_dir + sequence_name + '.npy'
 
-        # seq_info = gather_sequence_info(sequence_dir, detection_file)
         metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
         tracker = Tracker(metric)
         results = []
-
-
-
-        # n_frames = len(seq_info['image_filenames'])
 
         img_file_names = sorted(os.listdir(VEHICLE_DATA_DIR+sequence_name))
         n_frames = len(img_file_names)
