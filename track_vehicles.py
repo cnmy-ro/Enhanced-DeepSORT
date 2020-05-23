@@ -117,6 +117,7 @@ def cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, gaussian_
 
     detection_list = []
     for  bbox, score, feature in zip(bboxes, detection_scores, features):
+        feature = feature/np.linalg.norm(feature, ord=2) # Normalizing the feature vector
         detection_list.append(Detection(bbox, score, feature))
 
     bboxes = np.array([d.tlwh for d in detection_list])
@@ -208,12 +209,10 @@ def run_eval_mode(detection_model):
     encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
 
     if not EVAL_DETECTOR_SETTINGS['Online detection']:
-        # if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
-        #     detection_dir = VEHICLE_DETECTION_DIR_DPM
-        # elif EVAL_DETECTOR_SETTINGS['Detector'] == 'SSD':
-        #     detection_dir = VEHICLE_DETECTION_DIR_SSD
         detection_dir = VEHICLE_DETECTION_DIR_BASE + EVAL_DETECTOR_SETTINGS['Detector'] + '/'
-
+    else:
+        # Add online detection capabilities
+        pass
     gaussian_mask = get_gaussian_mask()
 
     # Print parameters before starting ----------------
@@ -281,8 +280,8 @@ def run_eval_mode(detection_model):
             ## Visualize confirmed tracks
             tracks = tracker.tracks
             for track in tracks:
-                # if not track.is_confirmed() or track.time_since_update > 0:
-                #     continue
+                if not track.is_confirmed() or track.time_since_update > 0:
+                    continue
                 color = dsutil_viz.create_unique_color_uchar(track.track_id)
                 text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
                 center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
@@ -308,7 +307,7 @@ def run_eval_mode(detection_model):
 
         # Store results.
         if not EVAL_DETECTOR_SETTINGS['Online detection']:
-            output_dir = RESULTS_DIR + 'Task-2/' + 'EVAL_' + EVAL_DETECTOR_SETTINGS['Detector'] + '/Tracking output/'
+            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + EVAL_DETECTOR_SETTINGS['Detector'] + '/Tracking output/'
             output_file_path = output_dir + sequence_name + '.txt'
         else:
             output_file_path = '/tmp/hypotheses.txt'

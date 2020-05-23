@@ -24,6 +24,8 @@ LINGERING DOUBTS:
 TODO:
 
 1. Benchmark the vehicle tracker on the dataset (only the first 20 sequences of training set) for the default DPM, default R-CNN and custom SSD detections
+    - Normalize the vehicle encodings, and then see if things improve (implemented, need to test it)
+
 2. Perform sensitivity analysis for both human and vehicle tracking
 
 
