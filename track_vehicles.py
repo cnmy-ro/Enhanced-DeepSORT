@@ -1,4 +1,4 @@
-import os, time, logging
+import os, time, logging, argparse
 
 import numpy as np
 import cv2
@@ -66,13 +66,8 @@ def get_gaussian_mask():
 
     return mask
 
-def pre_process(frame, bboxes):
+def pre_process(frame, bboxes, transforms):
         bboxes = np.array(bboxes)
-
-        transforms = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
-                                                     torchvision.transforms.Resize((128,128)),
-                                                     torchvision.transforms.ToTensor()])
-
         crops = []
         for bbox in bboxes:
             x,y,w,h = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
@@ -89,7 +84,7 @@ def pre_process(frame, bboxes):
 
 
 def create_detections(detection_mat, frame_idx, min_height=0):
-    print(detection_mat.shape)
+    # print(detection_mat.shape)
     frame_indices = detection_mat[:, 0].astype(np.int)
     mask = frame_indices == (frame_idx-1)
 
@@ -103,9 +98,9 @@ def create_detections(detection_mat, frame_idx, min_height=0):
 
 
 
-def cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, gaussian_mask):
+def cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, transforms, gaussian_mask):
 
-    processed_crops = pre_process(frame, bboxes)
+    processed_crops = pre_process(frame, bboxes, transforms)
     if USE_GAUSSIAN_MASK:
         processed_crops = gaussian_mask * processed_crops
 
@@ -139,6 +134,9 @@ def run_test_mode(detection_model, video_path):
     encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
 
     gaussian_mask = get_gaussian_mask()
+    transforms = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
+                                                     torchvision.transforms.Resize((128,128)),
+                                                     torchvision.transforms.ToTensor()])
 
     cap = cv2.VideoCapture(video_path)
 
@@ -158,7 +156,7 @@ def run_test_mode(detection_model, video_path):
         bboxes, detection_scores = detect_vehicles(detection_model, frame_rgb)
 
         # Give RGB frame to extract features
-        detection_list = cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, gaussian_mask)
+        detection_list = cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, transforms, gaussian_mask)
 
         detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
         # Run non-maxima suppression.
@@ -203,51 +201,97 @@ def run_test_mode(detection_model, video_path):
 
 
 
-def run_eval_mode(detection_model):
+def run_eval_mode(args, detection_model):
+    '''
+    Evaluate on UA-DETRAC dataset
+    '''
+
     sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))
+    sequence_names = sequence_names[:20] # First 20 sequences  ################
 
-    encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
 
-    if not EVAL_DETECTOR_SETTINGS['Online detection']:
-        detection_dir = VEHICLE_DETECTION_DIR_BASE + EVAL_DETECTOR_SETTINGS['Detector'] + '/'
-    else:
-        # Add online detection capabilities
-        pass
+
+    if args.online_detection == 0:
+        if USE_PRECOMPUTED_DETECTIONS:
+            detection_dir = VEHICLE_DETECTION_DIR_BASE + args.detector + '/'
+        else: # Use vehicle encoder on the fly
+            bboxes_dir = VEHICLE_BBOXES_DIR_BASE + args.detector + '/'
+            encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
+            transforms = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
+                                                         torchvision.transforms.Resize((128,128)),
+                                                         torchvision.transforms.ToTensor()])
+
+    else: # Use SSD detector (and vehicle encoder) on the fly
+        encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
+
     gaussian_mask = get_gaussian_mask()
 
+
     # Print parameters before starting ----------------
-    logging.info("Detections: {}".format(EVAL_DETECTOR_SETTINGS['Detector']))
+    logger.info("\nConfig ----- \n    Detector: {} \n    Online detection: {}\n".format(args.detector, args.online_detection))
 
     for sequence_name in sequence_names:
+        logger.info("Processing sequence: {}".format(sequence_name))
         sequence_dir = VEHICLE_DATA_DIR + sequence_name + '/'
 
-        if EVAL_DETECTOR_SETTINGS['Online detection']:
-            if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
+        if args.online_detection == 1:
+            if args.detector == 'DPM' or args.detector == 'RCNN':
                 raise Exception(" Online detection is possible only when using SSD")
-            detection_file = None
-        else:
-            detection_file = detection_dir + sequence_name + '.npy'
 
-        metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
+        if not USE_PRECOMPUTED_DETECTIONS:
+            if args.detector == 'SSD':
+                bbox_file = bboxes_dir + sequence_name + ".txt"
+            elif args.detector == 'DPM':
+                bbox_file = bboxes_dir + sequence_name + "_Det_DPM.txt"
+            elif args.detector == 'RCNN':
+                bbox_file = bboxes_dir + sequence_name + "_Det_R-CNN.txt"
+
+        metric = nn_matching.NearestNeighborDistanceMetric("cosine", args.max_cosine_distance, NN_BUDGET)
         tracker = Tracker(metric)
         results = []
 
         img_file_names = sorted(os.listdir(VEHICLE_DATA_DIR+sequence_name))
         n_frames = len(img_file_names)
+        logger.info("   Total frames:{}".format(n_frames))
 
-        logger.debug(detection_file)
+        # logger.debug(detection_file)
+        if USE_PRECOMPUTED_DETECTIONS:
+            detection_file = detection_dir + sequence_name + '.npy'
+            detections = np.load(detection_file, allow_pickle=True)
+
+        else:
+            bboxes_dir = "./Resources/Vehicles/Bboxes/DPM/"
+            bbox_file = bboxes_dir + sequence_name + "_Det_DPM.txt"
+            detections_in = np.loadtxt(bbox_file, delimiter=',')
+            detections_out = []
+            frame_indices = detections_in[:, 0].astype(np.int)
+
 
         for frame_idx in range(1, n_frames+1):
+
             t1 = time.time()
 
             img_file_path = VEHICLE_DATA_DIR + sequence_name + '/' + img_file_names[frame_idx-1]
-            logger.debug(img_file_path)
+            # logger.debug(img_file_path)
+            logger.info("Frame: {}".format(frame_idx))
             frame = cv2.imread(img_file_path)
 
+            if args.online_detection == 0: # Use pre-computed detections
 
-            if not EVAL_DETECTOR_SETTINGS['Online detection']: # Use pre-computed detections
-                detections_list = np.load(detection_file, allow_pickle=True)
-                detection_list = create_detections(detections_list, frame_idx, MIN_DETECTION_HEIGHT)
+                if USE_PRECOMPUTED_DETECTIONS:
+                    detection_list = create_detections(detections, frame_idx, MIN_DETECTION_HEIGHT)
+
+                else:
+                    mask = frame_indices == frame_idx
+                    rows = detections_in[mask]
+                    bboxes = rows[:, 2:6]
+                    detection_scores = rows[:,6]
+                    if rows.shape[0] <= 1: # If there' just one or no detected object -- results is irregularly shaped detection_out array
+                        print(" - skipping frame", end='')
+                        continue            # So skip this frame
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    detection_list = cvt_to_detection_objects(frame_rgb, bboxes, detection_scores, encoder, transforms, gaussian_mask)
+
 
             else:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -255,7 +299,10 @@ def run_eval_mode(detection_model):
                 detection_list = cvt_to_detection_objects(frame_rgb, bboxes, detection_scores, encoder, gaussian_mask)
 
 
-            detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
+            t2 = time.time()
+            #print("t2-t1:",t2-t1)
+
+            detection_list = [d for d in detection_list if d.confidence >= args.min_confidence]
 
             # Run non-maxima suppression.
             boxes = np.array([d.tlwh for d in detection_list])
@@ -266,65 +313,93 @@ def run_eval_mode(detection_model):
             # Update tracker.
             tracker.predict()
             tracker.update(detection_list)
+            tracks = tracker.tracks
 
             # Update visualization
-            output_img = frame.copy()
+            if args.display == 1:
+                output_img = frame.copy()
 
-            ## Visualize all detections
-            for i, detection in enumerate(detection_list):
-                x,y,w,h = detection.tlwh
-                pt1 = int(x), int(y)
-                pt2 = int(x + w), int(y + h)
-                cv2.rectangle(output_img, pt1, pt2, (0, 0, 255), 2)
+                ## Visualize all detections
+                for i, detection in enumerate(detection_list):
+                    x,y,w,h = detection.tlwh
+                    pt1 = int(x), int(y)
+                    pt2 = int(x + w), int(y + h)
+                    cv2.rectangle(output_img, pt1, pt2, (0, 0, 255), 2)
 
-            ## Visualize confirmed tracks
-            tracks = tracker.tracks
-            for track in tracks:
-                if not track.is_confirmed() or track.time_since_update > 0:
-                    continue
-                color = dsutil_viz.create_unique_color_uchar(track.track_id)
-                text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
-                center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
-                pt2 = pt1[0] + 10 + text_size[0][0], pt1[1] + 10 + text_size[0][1]
-                cv2.rectangle(output_img, pt1, pt2, color, -1)
-                cv2.putText(output_img, str(track.track_id), center, cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
+                ## Visualize confirmed tracks
+                for track in tracks:
+                    if not track.is_confirmed() or track.time_since_update > 0:
+                        continue
+                    color = dsutil_viz.create_unique_color_uchar(track.track_id)
+                    text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
+                    center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
+                    pt2 = pt1[0] + 10 + text_size[0][0], pt1[1] + 10 + text_size[0][1]
+                    cv2.rectangle(output_img, pt1, pt2, color, -1)
+                    cv2.putText(output_img, str(track.track_id), center, cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
 
-            fps = 1/(time.time()-t1)
-            cv2.putText(output_img, 'FPS: {:.1f}'.format(fps), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
-            cv2.imshow('detection output', output_img)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
+                fps = 1/(time.time()-t1)
+                cv2.putText(output_img, 'FPS: {:.1f}'.format(fps), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+                cv2.imshow('detection output', output_img)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    cv2. destroyAllWindows()
+                    break
 
             # Store results.
             for track in tracks:
                 if not track.is_confirmed() or track.time_since_update > 1:
                     continue
                 bbox = track.to_tlwh()
-                results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3], fps])
+                results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3]])
 
-        cv2. destroyAllWindows()
+            t3 = time.time()
+            # print("t3-t2:",t3-t2)
 
         # Store results.
-        if not EVAL_DETECTOR_SETTINGS['Online detection']:
-            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + EVAL_DETECTOR_SETTINGS['Detector'] + '/Tracking output/'
+        if args.online_detection == 0 and args.display == 0:
+            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/Tracking output/'
             output_file_path = output_dir + sequence_name + '.txt'
         else:
             output_file_path = '/tmp/hypotheses.txt'
 
         with open(output_file_path, 'w') as output_file:
-            avg_fps = 0
+            # avg_fps = 0
             for row in results:
                 output_file.write("{:d},{:d},{:.2f},{:.2f},{:.2f},{:.2f}\n".format(row[0], row[1], row[2], row[3], row[4], row[5]))
-                avg_fps += row[6]
-        avg_fps /= n_frames
-        logger.info("Average FPS: {:.2f}".format(avg_fps))
+        #         avg_fps += row[6]
+        # avg_fps /= n_frames
+        # logger.info("Average FPS: {:.2f}".format(avg_fps))
 
+###############################################################################
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--detector', type=str, help="Options: DPM, RCNN, SSD",
+                        default=EVAL_DETECTOR_SETTINGS['Detector'])
+
+    parser.add_argument('--online_detection', type=int, help="0: Use pre-computed detections, 1: Online detection",
+                        default=int(EVAL_DETECTOR_SETTINGS['Online detection']))
+
+    parser.add_argument('--min_confidence', type=float, help="Minimum detection confidence [0-1]",
+                        default=MIN_CONFIDENCE)
+
+    parser.add_argument('--max_cosine_distance', type=float, help="Max. cosine distance threshold for features",
+                        default=MAX_COSINE_DISTANCE)
+
+    parser.add_argument('--display', type=int, help="Display the tracking results",
+                        default=int(DISPLAY))
+
+    args = parser.parse_args()
+    return args
 
 ###############################################################################
 
 if __name__ == '__main__':
+
+    args = parse_args()
+
     detection_model, category_index = custom_utils.load_detection_model(DETECTION_MODEL_NAME)
     # video_path = "./vdo.avi"
     # run_tracker(detection_model, video_path)
-    run_eval_mode(detection_model)
+
+    run_eval_mode(args, detection_model)

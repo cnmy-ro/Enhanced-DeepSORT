@@ -7,7 +7,7 @@
     #     'vehicles-TEST'    - Perform vehicle tracking using test video/image sequence
     #     'vehicles-EVAL'    - Perform evaluation on UA-DETRAC data, store the results
 
-RUN_MODE = 'humans-CAM'
+RUN_MODE = 'vehicles-EVAL'
 
 
 # EVAL mode detector options:
@@ -15,7 +15,7 @@ RUN_MODE = 'humans-CAM'
     #     'SSD'  - Use (pre-computed or online) MobileNetv2-SSD detections
     #     'RCNN' - Use default pre-computed RCNN detections -- only for vehicle tracking
 
-EVAL_DETECTOR_SETTINGS = {'Detector': 'RCNN',
+EVAL_DETECTOR_SETTINGS = {'Detector': 'DPM',
                           'Online detection': False} # Online detection is possible only while using SSD}
 
 
@@ -33,13 +33,13 @@ PATH_TO_LABELS = './object_detection/data/mscoco_label_map.pbtxt'
 #                             TRACKING
 ###############################################################################
 
-MIN_CONFIDENCE = 0.6
+MIN_CONFIDENCE = 0.4
 
 NMS_MAX_OVERLAP = 1.0
 MIN_DETECTION_HEIGHT = 0
 MAX_COSINE_DISTANCE = 0.2
 NN_BUDGET = 100
-DISPLAY = True
+DISPLAY = False
 
 RESULTS_DIR = './Results/'
 
@@ -58,9 +58,9 @@ HUMAN_ENCODER_PATH = './Resources/Humans/human_encoder_model/mars-small128.pb'
 # -----------------------------------------------------------------------------
 USE_GAUSSIAN_MASK = True
 VEHICLE_DATA_DIR = "./Data/UA-DETRAC/Insight-MVT_Annotation_Train/"
-# VEHICLE_DETECTION_DIR_DPM = "./Resources/Vehicles/Detections/DPM/"
-# VEHICLE_DETECTION_DIR_SSD = "./Resources/Vehicles/Detections/SSD/"
+USE_PRECOMPUTED_DETECTIONS = True  # True: use precomputed-feature detections (.npy files) in Vehicle-EVAL mode, False: Use bboxes directly (txt files)
 VEHICLE_DETECTION_DIR_BASE = "./Resources/Vehicles/Detections/"
+VEHICLE_BBOXES_DIR_BASE = "./Resources/Vehicles/Bboxes/"
 
 VEHICLE_ENCODER_PATH = './Resources/Vehicles/vehicle_encoder_model/ckpts/model640.pt'
 

@@ -25,8 +25,10 @@ TODO:
 
 1. Benchmark the vehicle tracker on the dataset (only the first 20 sequences of training set) for the default DPM, default R-CNN and custom SSD detections
     - Normalize the vehicle encodings, and then see if things improve (implemented, need to test it)
+    - Modify generate_vehicle_detections code to take args, get all 3 sets of detections again
 
 2. Perform sensitivity analysis for both human and vehicle tracking
+    - Use commandline scripting -- need to modify the track_humans code to take args
 
 3. Add SSD online detection mode for vehicles -- for measuring online operation FPS
 

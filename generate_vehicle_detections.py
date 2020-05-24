@@ -5,7 +5,7 @@ import cv2
 import torch
 import torchvision
 
-from config import *
+from config import VEHICLE_DATA_DIR, VEHICLE_ENCODER_PATH
 
 ###############################################################################
 
@@ -45,7 +45,7 @@ def generate_detections(encoder, output_dir, bboxes_dir=None):
 
         image_filenames = sorted(os.listdir(sequence_dir))
 
-        detection_file = bboxes_dir + sequence + "_Det_R-CNN.txt"
+        detection_file = bboxes_dir + sequence + "_Det_DPM.txt"
         # detection_file = bboxes_dir + bbox_file_names[start_from_frame_idx + s]
         detections_in = np.loadtxt(detection_file, delimiter=',')
 
@@ -88,7 +88,7 @@ def generate_detections(encoder, output_dir, bboxes_dir=None):
 
 if __name__ == '__main__':
 
-    detector_name = 'RCNN'
+    detector_name = 'DPM'
 
     bbox_dir = "./Resources/Vehicles/Bboxes/" + detector_name + "/"
     output_dir = "./Resources/Vehicles/Detections/" + detector_name + "/"

@@ -15,7 +15,7 @@ from deep_sort_utils import visualization as dsutil_viz
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
-from Tools import generate_detections as gen_det
+from Tools import generate_mot16_detections as gen_det
 
 # Custom imports
 import custom_utils
