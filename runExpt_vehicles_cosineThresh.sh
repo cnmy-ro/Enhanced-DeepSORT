@@ -9,7 +9,7 @@ display=0
 
 ################################################################################
 max_cosine_distance=0.3
-benchmark_results_path="./Results/Vehicle tracking/0.3cosineThreshold"
+benchmark_results_path="./Results/Vehicle tracking/03cosineThreshold.txt"
 echo Bechmarking all 3 detectors for cosine threshold $max_cosine_distance
 
 for detector in "DPM" "RCNN" "SSD"

@@ -6,7 +6,7 @@ import motmetrics as mm
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output_path', type=str,
-                    default="./Results/Vehicle Tracking/benchmark_results.txt")
+                    required=True)
 
 args = parser.parse_args()
 
