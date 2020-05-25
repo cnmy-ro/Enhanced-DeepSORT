@@ -1,8 +1,11 @@
-import os, time, logging
+import os, time, logging, argparse
 
 import numpy as np
 import cv2
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
+
 
 # TF object detection imports
 from object_detection.utils import ops as utils_ops
@@ -38,7 +41,7 @@ def detect_humans(detection_model, frame):
     for i, box in enumerate(all_bboxes):
         det_class = all_detection_classes[i]
         det_score = all_detection_scores[i]
-        if det_class == 1 and det_score > MIN_CONFIDENCE: # If the detected object is a person with a confidence of at least MIN_CONFIDENCE
+        if det_class == 1: # If the detected object is a person
             y1,x1,y2,x2 = int(box[0]*frame.shape[0]), int(box[1]*frame.shape[1]), int(box[2]*frame.shape[0]), int(box[3]*frame.shape[1])
             bboxes.append(tuple([x1,y1,x2-x1,y2-y1])) # TLWH format bboxes
             detection_scores.append(det_score)
@@ -126,12 +129,12 @@ def cvt_to_detection_objects(frame, bboxes, confidence_scores, encoder):
 ###############################################################################
 #                               Run options
 ###############################################################################
-def run_cam_mode(detection_model):
+def run_cam_mode(detection_model, args):
     cam = cv2.VideoCapture(0)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
 
-    metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
+    metric = nn_matching.NearestNeighborDistanceMetric("cosine", args.max_cosine_distance, NN_BUDGET)
     tracker = Tracker(metric)
 
     encoder = gen_det.create_box_encoder(HUMAN_ENCODER_PATH, batch_size=32)
@@ -145,6 +148,13 @@ def run_cam_mode(detection_model):
       frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
       bboxes, detection_scores = detect_humans(detection_model, frame_rgb)
       detection_list = cvt_to_detection_objects(frame_rgb, bboxes, detection_scores, encoder)
+
+      # Run non-maxima suppression.
+      detection_list = [d for d in detection_list if d.confidence >= args.min_confidence]
+      boxes = np.array([d.tlwh for d in detection_list])
+      scores = np.array([d.confidence for d in detection_list])
+      indices = dsutil_prep.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
+      detection_list = [detection_list[i] for i in indices]
 
       # Update tracker
       tracker.predict()
@@ -184,49 +194,60 @@ def run_cam_mode(detection_model):
 
 
 
-def run_eval_mode(detection_model):
+def run_eval_mode(detection_model, args):
     train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
                             'MOT16-10', 'MOT16-11', 'MOT16-13']
 
-
-    if not EVAL_DETECTOR_SETTINGS['Online detection']:
-        if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
+    '''
+    if args.online_detection == 0: # If using pre-computed detections
+        if args.detector == 'DPM':
             detection_dir = MOT16_DETECTION_DIR_DPM
-        elif EVAL_DETECTOR_SETTINGS['Detector'] == 'SSD':
+        elif args.detector == 'SSD':
             detection_dir = MOT16_DETECTION_DIR_SSD
+    '''
+
+    # Print parameters before starting ----------------
+    logger.info("\nConfig ---- \n----Detector: {} \n----Online detection: {}".format(args.detector, args.online_detection))
 
 
     for sequence_name in train_sequence_names:
+        logger.info("Processing sequence: {}".format(sequence_name))
         sequence_dir = MOT16_TRAIN_DATA_DIR + sequence_name + '/'
 
-        if EVAL_DETECTOR_SETTINGS['Online detection']:
-            if EVAL_DETECTOR_SETTINGS['Detector'] == 'DPM':
+        if args.online_detection == 1:
+            if args.detector  == 'DPM':
                 raise Exception(" Online detection is possible only when using SSD")
             detection_file = None
         else:
+            detection_dir = MOT16_DETECTION_DIR_BASE + args.detector + "/MOT16_POI_train/"
             detection_file = detection_dir + sequence_name + '.npy'
+            detections = np.load(detection_file, allow_pickle=True)
+            #print("detections shape:", detections.shape)
 
         seq_info = gather_sequence_info(sequence_dir, detection_file)
-        metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE, NN_BUDGET)
+        metric = nn_matching.NearestNeighborDistanceMetric("cosine", args.max_cosine_distance, NN_BUDGET)
         tracker = Tracker(metric)
         results = []
 
         encoder = gen_det.create_box_encoder(HUMAN_ENCODER_PATH, batch_size=32)
 
         n_frames = len(seq_info['image_filenames'])
+        logger.info("----Total frames:{}".format(n_frames))
+        #logger.info("----Detections file:{}".format(detection_file))
 
-        logger.debug(detection_file)
+        # logger.debug(detection_file)
 
         def frame_callback(vis, frame_idx):
-            logger.info("Processing Sequence {}, Frame {:05d}" .format(sequence_name, frame_idx))
+            # logger.info("Processing Sequence {}, Frame {:05d}" .format(sequence_name, frame_idx))
 
             frame = cv2.imread(seq_info['image_filenames'][frame_idx])
             t1 = time.time()
 
-            if not EVAL_DETECTOR_SETTINGS['Online detection']: # Use pre-computed detections
+            if args.online_detection == 0: # If not online detection- Use pre-computed detections
                 # Load image and generate detections.
-                detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
-                detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
+                #detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
+                detection_list = create_detections(detections, frame_idx, MIN_DETECTION_HEIGHT)
+                detection_list = [d for d in detection_list if d.confidence >= args.min_confidence]
 
                 # Run non-maxima suppression.
                 boxes = np.array([d.tlwh for d in detection_list])
@@ -260,16 +281,16 @@ def run_eval_mode(detection_model):
                 bbox = track.to_tlwh()
                 results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3], fps])
 
-        # Run tracker.
+        # Visualize
         if DISPLAY:
-            visualizer = visualization.Visualization(seq_info, update_ms=5)
+            visualizer = dsutil_viz.Visualization(seq_info, update_ms=5)
         else:
-            visualizer = visualization.NoVisualization(seq_info)
+            visualizer = dsutil_viz.NoVisualization(seq_info)
         visualizer.run(frame_callback)
 
         # Store results.
-        if not EVAL_DETECTOR_SETTINGS['Online detection']:
-            output_dir = RESULTS_DIR + 'Pedestrian Tracking/' + 'EVAL_' + EVAL_DETECTOR_SETTINGS['Detector'] + '/Tracking output/'
+        if args.online_detection == 0: # If not online detection
+            output_dir = RESULTS_DIR + 'Pedestrian Tracking/' + 'EVAL_' + args.detector + '/trackOutput-{}cosineThresh/'.format(args.max_cosine_distance)
             output_file_path = output_dir + sequence_name + '.txt'
         else:
             output_file_path = '/temp/hypotheses.txt'
@@ -280,4 +301,46 @@ def run_eval_mode(detection_model):
                 output_file.write("{:d},{:d},{:.2f},{:.2f},{:.2f},{:.2f}\n".format(row[0], row[1], row[2], row[3], row[4], row[5]))
                 avg_fps += row[6]
         avg_fps /= n_frames
-        logger.info("Average FPS: {:.2f}".format(avg_fps))
+        logger.info("----Average FPS: {:.2f}".format(avg_fps))
+
+
+#######################################################################################
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--mode', type=str, help="'cam': Run on webcam stream; 'eval': Evaluate on MOT16 benchmark",
+                        default='eval')
+
+    parser.add_argument('--detector', type=str, help="Options: DPM, SSD",
+                        default=EVAL_DETECTOR_SETTINGS['Detector'])
+
+    parser.add_argument('--online_detection', type=int, help="0: Use pre-computed detections, 1: Online detection",
+                        default=int(EVAL_DETECTOR_SETTINGS['Online detection']))
+
+    parser.add_argument('--min_confidence', type=float, help="Minimum detection confidence [0-1]",
+                        default=MIN_CONFIDENCE)
+
+    parser.add_argument('--max_cosine_distance', type=float, help="Max. cosine distance threshold for features",
+                        default=MAX_COSINE_DISTANCE)
+
+    parser.add_argument('--display', type=int, help="Display the tracking results",
+                        default=int(DISPLAY))
+
+    args = parser.parse_args()
+    return args
+
+#######################################################################################
+
+if __name__ == '__main__':
+
+    args = parse_args()
+
+    detection_model, category_index = custom_utils.load_detection_model(DETECTION_MODEL_NAME)
+    logger.debug(category_index[1]) # Human
+
+    if args.mode == 'cam':
+        run_cam_mode(detection_model, args)
+
+    if args.mode == 'eval':
+        run_eval_mode(detection_model, args)

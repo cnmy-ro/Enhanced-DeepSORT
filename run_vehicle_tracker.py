@@ -127,9 +127,9 @@ def cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, transform
 
 ###############################################################################
 
-def run_test_mode(detection_model, video_path):
+def run_test_mode(detection_model, args):
 
-    metric = nn_matching.NearestNeighborDistanceMetric("cosine", MAX_COSINE_DISTANCE , NN_BUDGET)
+    metric = nn_matching.NearestNeighborDistanceMetric("cosine", args.max_cosine_distance , NN_BUDGET)
     tracker= Tracker(metric)
     encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
 
@@ -138,7 +138,10 @@ def run_test_mode(detection_model, video_path):
                                                      torchvision.transforms.Resize((128,128)),
                                                      torchvision.transforms.ToTensor()])
 
+    video_path = args.video_path
     cap = cv2.VideoCapture(video_path)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
 
     frame_id = 0
     while True:
@@ -158,8 +161,8 @@ def run_test_mode(detection_model, video_path):
         # Give RGB frame to extract features
         detection_list = cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, transforms, gaussian_mask)
 
-        detection_list = [d for d in detection_list if d.confidence >= MIN_CONFIDENCE]
         # Run non-maxima suppression.
+        detection_list = [d for d in detection_list if d.confidence >= args.min_confidence]
         boxes = np.array([d.tlwh for d in detection_list])
         scores = np.array([d.confidence for d in detection_list])
         indices = dsutil_prep.non_max_suppression(boxes, NMS_MAX_OVERLAP, scores)
@@ -201,7 +204,7 @@ def run_test_mode(detection_model, video_path):
 
 
 
-def run_eval_mode(args, detection_model):
+def run_eval_mode(detection_model, args):
     '''
     Evaluate on UA-DETRAC dataset
     '''
@@ -266,7 +269,7 @@ def run_eval_mode(args, detection_model):
             detections_out = []
             frame_indices = detections_in[:, 0].astype(np.int)
 
-
+        avg_fps = 0
         for frame_idx in range(1, n_frames+1):
 
             t1 = time.time()
@@ -299,9 +302,6 @@ def run_eval_mode(args, detection_model):
                 detection_list = cvt_to_detection_objects(frame_rgb, bboxes, detection_scores, encoder, gaussian_mask)
 
 
-            t2 = time.time()
-            #print("t2-t1:",t2-t1)
-
             detection_list = [d for d in detection_list if d.confidence >= args.min_confidence]
 
             # Run non-maxima suppression.
@@ -314,6 +314,10 @@ def run_eval_mode(args, detection_model):
             tracker.predict()
             tracker.update(detection_list)
             tracks = tracker.tracks
+
+            # FPS counter
+            fps = 1/(time.time()-t1)
+            avg_fps += fps
 
             # Update visualization
             if args.display == 1:
@@ -337,7 +341,6 @@ def run_eval_mode(args, detection_model):
                     cv2.rectangle(output_img, pt1, pt2, color, -1)
                     cv2.putText(output_img, str(track.track_id), center, cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
 
-                fps = 1/(time.time()-t1)
                 cv2.putText(output_img, 'FPS: {:.1f}'.format(fps), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
                 cv2.imshow('detection output', output_img)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -351,27 +354,22 @@ def run_eval_mode(args, detection_model):
                 bbox = track.to_tlwh()
                 results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3]])
 
-            t3 = time.time()
-            # print("t3-t2:",t3-t2)
+        avg_fps /= n_frames
 
         # Store results.
         if args.online_detection == 0 and args.display == 0:
-            # Normal save path
-            #output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/Tracking output/'
             # Save path for cosine threshold experiment cases
-            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/Output-{}cosineThresh/'.format(args.max_cosine_distance)
+            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/trackOutput-{}cosineThresh/'.format(args.max_cosine_distance)
 
             output_file_path = output_dir + sequence_name + '.txt'
         else:
             output_file_path = '/tmp/hypotheses.txt'
 
         with open(output_file_path, 'w') as output_file:
-            # avg_fps = 0
             for row in results:
                 output_file.write("{:d},{:d},{:.2f},{:.2f},{:.2f},{:.2f}\n".format(row[0], row[1], row[2], row[3], row[4], row[5]))
-        #         avg_fps += row[6]
-        # avg_fps /= n_frames
-        # logger.info("Average FPS: {:.2f}".format(avg_fps))
+
+        logger.info("----Average FPS: {:.2f}".format(avg_fps))
 
 ###############################################################################
 
@@ -415,7 +413,7 @@ if __name__ == '__main__':
 
 
     if args.mode == 'test':
-        run_tracker(detection_model, args.video_path)
+        run_test_mode(detection_model, args)
 
     if args.mode == 'eval':
-        run_eval_mode(args, detection_model)
+        run_eval_mode(detection_model, args)

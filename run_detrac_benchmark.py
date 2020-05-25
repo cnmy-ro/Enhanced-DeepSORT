@@ -8,8 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--eval_dir_dpm',type=str, required=True)
 parser.add_argument('--eval_dir_rcnn',type=str, required=True)
 parser.add_argument('--eval_dir_ssd',type=str, required=True)
-parser.add_argument('--output_path', type=str,
-                    required=True)
+parser.add_argument('--output_path', type=str, required=True)
 
 args = parser.parse_args()
 
@@ -26,20 +25,18 @@ vehicle_data_dir = "./Data/UA-DETRAC/Insight-MVT_Annotation_Train/"
 sequence_name_list = sorted(os.listdir(vehicle_data_dir))[:20] # First 20 sequences
 ground_truth_dir = "./Data/UA-DETRAC/ground_truths/"
 
-# Default settings for base case----------------------------------------
+## Default settings for base case----------------------------------------
 #eval_dir_dpm = "./Results/Vehicle Tracking/EVAL_DPM/Tracking output/"
 #eval_dir_rcnn = "./Results/Vehicle Tracking/EVAL_RCNN/Tracking output/"
 #eval_dir_ssd = "./Results/Vehicle Tracking/EVAL_SSD/Tracking output/"
-
 #output_path = "./Results/Vehicle Tracking/benchmark_results.txt"
 
-# For experiment--------------------------------------------------------
+## For experiment--------------------------------------------------------
 eval_dir_dpm = args.eval_dir_dpm
 eval_dir_rcnn = args.eval_dir_rcnn
 eval_dir_ssd = args.eval_dir_ssd
-
 output_path = args.output_path
-#-----------------------------------------------------------------------
+##
 
 
 # Initialize the Py-Motmetrics accumulators
@@ -52,6 +49,7 @@ ssd_accumulator = mm.MOTAccumulator(auto_id=True)
 ###############################################################################
 
 # Run on all train sequences
+print("Computing benchmark metrics ----")
 for sequence_name in sequence_name_list:
 
     print("Processing sequence:", sequence_name)

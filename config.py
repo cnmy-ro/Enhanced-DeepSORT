@@ -47,10 +47,11 @@ RESULTS_DIR = './Results/'
 #                          Human tracking
 # -----------------------------------------------------------------------------
 MOT16_TRAIN_DATA_DIR = './Data/MOT16/train/'
-MOT16_DETECTION_DIR_DPM = './Resources/Humans/Detections/DPM/MOT16_POI_train/'
-MOT16_DETECTION_DIR_SSD = './Resources/Humans/Detections/SSD/MOT16_POI_train/'
+#MOT16_DETECTION_DIR_DPM = './Resources/Pedestrians/Detections/DPM/MOT16_POI_train/'
+#MOT16_DETECTION_DIR_SSD = './Resources/Pedestrians/Detections/SSD/MOT16_POI_train/'
+MOT16_DETECTION_DIR_BASE = "./Resources/Pedestrians/Detections/"
 
-HUMAN_ENCODER_PATH = './Resources/Humans/human_encoder_model/mars-small128.pb'
+HUMAN_ENCODER_PATH = './Resources/Pedestrians/human_encoder_model/mars-small128.pb'
 
 
 # -----------------------------------------------------------------------------

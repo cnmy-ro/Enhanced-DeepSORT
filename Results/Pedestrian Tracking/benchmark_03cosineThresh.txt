@@ -1,0 +1,4 @@
+                       MOTA  MOTP  MT ML  ID    FM
+Best possible scores 100.0% 0.000 163  0   0     0
+DPMv5                 75.0% 0.486  70  6 919  1427
+MobileNetv2-SSD       25.4% 0.634   0 87 569  1687

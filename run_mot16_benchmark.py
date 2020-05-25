@@ -1,6 +1,17 @@
+import argparse
 import numpy as np
 
 import motmetrics as mm
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--eval_dir_dpm',type=str, required=True)
+parser.add_argument('--eval_dir_ssd',type=str, required=True)
+parser.add_argument('--output_path', type=str, required=True)
+
+args = parser.parse_args()
+
+###############################################################################
 
 '''
 Specs:
@@ -12,12 +23,18 @@ Specs:
 train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
                         'MOT16-10', 'MOT16-11', 'MOT16-13']
 
-mot_train_dir = ".Data/MOT16/train/"
+mot_train_dir = "./Data/MOT16/train/"
 
-eval_dir_dpm = "./Results/Task-1/EVAL_DPM/Tracking output/"
-eval_dir_ssd = "./Results/Task-1/EVAL_SSD/Tracking output/"
+## Default paths -----------------------------------------------
+# eval_dir_dpm = "./Results/Task-1/EVAL_DPM/Tracking output/"
+# eval_dir_ssd = "./Results/Task-1/EVAL_SSD/Tracking output/"
+# output_path = "./Results/Task-1/benchmark_results.txt"
 
-output_file_path = "./Results/Task-1/benchmark_results.txt"
+## For experiment ----------------------------------------------
+eval_dir_dpm = args.eval_dir_dpm
+eval_dir_ssd = args.eval_dir_ssd
+output_path = args.output_path
+##
 
 # Initialize the Py-Motmetrics accumulators
 gt_accumulator = mm.MOTAccumulator(auto_id=True)
@@ -28,7 +45,9 @@ ssd_accumulator = mm.MOTAccumulator(auto_id=True)
 ###############################################################################
 
 # Run on all train sequences
+print("Computing benchmark metrics ----")
 for sequence_name in train_sequence_names:
+    print("Processing sequence:", sequence_name)
 
     ground_truth_path = mot_train_dir + sequence_name + '/gt/gt.txt'
     ground_truth = np.loadtxt(ground_truth_path, delimiter=',')
@@ -52,13 +71,15 @@ for sequence_name in train_sequence_names:
         gt_frame_object_ids = gt_frame[:,1]
         gt_frame_bboxes = gt_frame[:, 2:6]
 
-        default_frame = eval_result_dpm[eval_result_dpm[:,0]==frame_idx]
-        default_frame_object_ids = default_frame[:,1]
-        default_frame_bboxes = default_frame[:,2:6]
+        dpm_frame = eval_result_dpm[eval_result_dpm[:,0]==frame_idx]
+        if dpm_frame.shape[0] != 0: # Only proceed if DPM result has this frame
+          dpm_frame_object_ids = dpm_frame[:,1]
+          dpm_frame_bboxes = dpm_frame[:,2:6]
 
         ssd_frame = eval_result_ssd[eval_result_ssd[:,0]==frame_idx]
-        ssd_frame_object_ids = ssd_frame[:,1]
-        ssd_frame_bboxes = ssd_frame[:,2:6]
+        if ssd_frame.shape[0] != 0:
+          ssd_frame_object_ids = ssd_frame[:,1]
+          ssd_frame_bboxes = ssd_frame[:,2:6]
 
 
         # Calculate distance  matrix (IoU)...
@@ -67,26 +88,32 @@ for sequence_name in train_sequence_names:
                               gt_frame_object_ids, # Predicted objects (IDs)
                               self_dist_matrix)
 
-        default_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, default_frame_bboxes)
-        dpm_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
-                               default_frame_object_ids, # Predicted objects (IDs)
-                               default_distance_matrix)
+        if dpm_frame.shape[0] != 0:
+          dpm_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, dpm_frame_bboxes)
+          dpm_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
+                                 dpm_frame_object_ids, # Predicted objects (IDs)
+                                 dpm_distance_matrix)
 
-        ssd_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, ssd_frame_bboxes)
-        ssd_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
-                               ssd_frame_object_ids, # Predicted objects (IDs)
-                               ssd_distance_matrix)
+        if ssd_frame.shape[0] != 0:
+          ssd_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, ssd_frame_bboxes)
+          ssd_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
+                                 ssd_frame_object_ids, # Predicted objects (IDs)
+                                 ssd_distance_matrix)
 
 
 
 mh = mm.metrics.create()
 summary = mh.compute_many([gt_accumulator, dpm_accumulator, ssd_accumulator],
-                          metrics=mm.metrics.motchallenge_metrics,
-                          names=['Perfect scores (GT v/s GT)','Default detecions (dpm-v5)', 'MobileNetv2-ssd'])
+                           names=['Best possible scores','DPMv5', 'MobileNetv2-SSD'],
+                           metrics=['mota', 'motp', 'mostly_tracked', 'mostly_lost', 'num_switches', 'num_fragmentations'])
+
 strsummary = mm.io.render_summary(summary,
                                   formatters=mh.formatters,
-                                  namemap=mm.io.motchallenge_metric_names)
+                                  namemap={'mota':'MOTA', 'motp':'MOTP',
+                                           'mostly_tracked':'MT', 'mostly_lost':'ML',
+                                           'num_switches': 'ID', 'num_fragmentations':'FM'})
+
 print(strsummary)
 
-with open(output_file_path, 'w') as output_file:
+with open(output_path, 'w') as output_file:
     output_file.write(strsummary)
