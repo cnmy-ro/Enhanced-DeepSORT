@@ -207,7 +207,7 @@ def run_eval_mode(args, detection_model):
     '''
 
     sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))
-    sequence_names = sequence_names[19:20] # First 20 sequences  ################
+    sequence_names = sequence_names[:20] # First 20 sequences  ################
 
 
 

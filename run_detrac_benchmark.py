@@ -5,6 +5,9 @@ import motmetrics as mm
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--eval_dir_dpm',type=str, required=True)
+parser.add_argument('--eval_dir_rcnn',type=str, required=True)
+parser.add_argument('--eval_dir_ssd',type=str, required=True)
 parser.add_argument('--output_path', type=str,
                     required=True)
 
@@ -23,9 +26,20 @@ vehicle_data_dir = "./Data/UA-DETRAC/Insight-MVT_Annotation_Train/"
 sequence_name_list = sorted(os.listdir(vehicle_data_dir))[:20] # First 20 sequences
 ground_truth_dir = "./Data/UA-DETRAC/ground_truths/"
 
-eval_dir_dpm = "./Results/Vehicle Tracking/EVAL_DPM/Tracking output/"
-eval_dir_rcnn = "./Results/Vehicle Tracking/EVAL_RCNN/Tracking output/"
-eval_dir_ssd = "./Results/Vehicle Tracking/EVAL_SSD/Tracking output/"
+# Default settings for base case----------------------------------------
+#eval_dir_dpm = "./Results/Vehicle Tracking/EVAL_DPM/Tracking output/"
+#eval_dir_rcnn = "./Results/Vehicle Tracking/EVAL_RCNN/Tracking output/"
+#eval_dir_ssd = "./Results/Vehicle Tracking/EVAL_SSD/Tracking output/"
+
+#output_path = "./Results/Vehicle Tracking/benchmark_results.txt"
+
+# For experiment--------------------------------------------------------
+eval_dir_dpm = args.eval_dir_dpm
+eval_dir_rcnn = args.eval_dir_rcnn
+eval_dir_ssd = args.eval_dir_ssd
+
+output_path = args.output_path
+#-----------------------------------------------------------------------
 
 
 # Initialize the Py-Motmetrics accumulators
@@ -120,5 +134,5 @@ strsummary = mm.io.render_summary(summary,
 
 print(strsummary)
 
-with open(args.output_path, 'w') as output_file:
+with open(output_path, 'w') as output_file:
     output_file.write(strsummary)
