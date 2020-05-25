@@ -7,7 +7,7 @@
     #     'vehicles-TEST'    - Perform vehicle tracking using test video/image sequence
     #     'vehicles-EVAL'    - Perform evaluation on UA-DETRAC data, store the results
 
-RUN_MODE = 'vehicles-EVAL'
+RUN_MODE = 'vehicles-EVAL'  # No more needed. Remove this later
 
 
 # EVAL mode detector options:

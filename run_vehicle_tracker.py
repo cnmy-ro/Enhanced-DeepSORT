@@ -207,7 +207,7 @@ def run_eval_mode(args, detection_model):
     '''
 
     sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))
-    sequence_names = sequence_names[:20] # First 20 sequences  ################
+    sequence_names = sequence_names[19:20] # First 20 sequences  ################
 
 
 
@@ -228,7 +228,7 @@ def run_eval_mode(args, detection_model):
 
 
     # Print parameters before starting ----------------
-    logger.info("\nConfig ----- \n    Detector: {} \n    Online detection: {}\n".format(args.detector, args.online_detection))
+    logger.info("\nConfig ---- \n----Detector: {} \n----Online detection: {}".format(args.detector, args.online_detection))
 
     for sequence_name in sequence_names:
         logger.info("Processing sequence: {}".format(sequence_name))
@@ -252,7 +252,7 @@ def run_eval_mode(args, detection_model):
 
         img_file_names = sorted(os.listdir(VEHICLE_DATA_DIR+sequence_name))
         n_frames = len(img_file_names)
-        logger.info("   Total frames:{}".format(n_frames))
+        logger.info("----Total frames:{}".format(n_frames))
 
         # logger.debug(detection_file)
         if USE_PRECOMPUTED_DETECTIONS:
@@ -273,7 +273,7 @@ def run_eval_mode(args, detection_model):
 
             img_file_path = VEHICLE_DATA_DIR + sequence_name + '/' + img_file_names[frame_idx-1]
             # logger.debug(img_file_path)
-            logger.info("Frame: {}".format(frame_idx))
+            # logger.info("Frame: {}".format(frame_idx))
             frame = cv2.imread(img_file_path)
 
             if args.online_detection == 0: # Use pre-computed detections
@@ -356,7 +356,11 @@ def run_eval_mode(args, detection_model):
 
         # Store results.
         if args.online_detection == 0 and args.display == 0:
-            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/Tracking output/'
+            # Normal save path
+            #output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/Tracking output/'
+            # Save path for cosine threshold experiment cases
+            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/Output-{}cosineThresh/'.format(args.max_cosine_distance)
+
             output_file_path = output_dir + sequence_name + '.txt'
         else:
             output_file_path = '/tmp/hypotheses.txt'
@@ -373,6 +377,12 @@ def run_eval_mode(args, detection_model):
 
 def parse_args():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('--mode', type=str, help="'test': Run on a given test video; 'eval': Evaluate on UA-DETRAC benchmark",
+                        default='eval')
+
+    parser.add_argument('--video_path', type=str, help="Path of input video, when using 'test' mode",
+                        default='')
 
     parser.add_argument('--detector', type=str, help="Options: DPM, RCNN, SSD",
                         default=EVAL_DETECTOR_SETTINGS['Detector'])
@@ -399,7 +409,13 @@ if __name__ == '__main__':
     args = parse_args()
 
     detection_model, category_index = custom_utils.load_detection_model(DETECTION_MODEL_NAME)
-    # video_path = "./vdo.avi"
-    # run_tracker(detection_model, video_path)
+    logger.debug(category_index[3]) # Car
+    logger.debug(category_index[6]) # Bus
+    logger.debug(category_index[8]) # Truck
 
-    run_eval_mode(args, detection_model)
+
+    if args.mode == 'test':
+        run_tracker(detection_model, args.video_path)
+
+    if args.mode == 'eval':
+        run_eval_mode(args, detection_model)

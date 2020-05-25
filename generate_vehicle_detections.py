@@ -30,7 +30,7 @@ def pre_process(frame, bboxes, transforms):
 def generate_detections(encoder, output_dir, bboxes_dir=None):
     sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))
 
-    sequence_names = sequence_names[:20] # First 20 sequences
+    sequence_names = sequence_names[19:20] # First 20 sequences
 
     bbox_file_names = sorted(os.listdir(bboxes_dir))
 
@@ -45,17 +45,14 @@ def generate_detections(encoder, output_dir, bboxes_dir=None):
 
         image_filenames = sorted(os.listdir(sequence_dir))
 
-        detection_file = bboxes_dir + sequence + "_Det_DPM.txt"
+        detection_file = bboxes_dir + sequence + ".txt"
         # detection_file = bboxes_dir + bbox_file_names[start_from_frame_idx + s]
         detections_in = np.loadtxt(detection_file, delimiter=',')
-
         detections_out = []
 
         frame_indices = detections_in[:, 0].astype(np.int)
         #min_frame_idx = frame_indices.astype(np.int).min()
-        max_frame_idx = frame_indices.astype(np.int).max()
-
-
+        max_frame_idx = frame_indices.astype(np.int).max()        skipped_frames = 0
 
         for frame_idx in range(1, max_frame_idx+1):
             print("\nFrame %05d/%05d" % (frame_idx, max_frame_idx), end='')
@@ -68,6 +65,7 @@ def generate_detections(encoder, output_dir, bboxes_dir=None):
             boxes = rows[:, 2:6]
             if rows.shape[0] <= 1: # If there' just one or no detected object -- results is irregularly shaped detection_out array
                 print(" - skipping frame", end='')
+                skipped_frames += 1
                 continue            # So skip this frame
 
             processed_crops = pre_process(image, boxes, transforms)
@@ -81,6 +79,7 @@ def generate_detections(encoder, output_dir, bboxes_dir=None):
             print("  --  Detections shape", np.array(detections_out).shape)#####
         output_filename = os.path.join(output_dir, "%s.npy" % sequence)
         np.save(output_filename, np.asarray(detections_out), allow_pickle=True)
+        print("Skipped frames:", skipped_frames)
 
 
 
@@ -88,7 +87,7 @@ def generate_detections(encoder, output_dir, bboxes_dir=None):
 
 if __name__ == '__main__':
 
-    detector_name = 'DPM'
+    detector_name = 'SSD'
 
     bbox_dir = "./Resources/Vehicles/Bboxes/" + detector_name + "/"
     output_dir = "./Resources/Vehicles/Detections/" + detector_name + "/"
