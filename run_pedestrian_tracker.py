@@ -289,11 +289,13 @@ def run_eval_mode(detection_model, args):
         visualizer.run(frame_callback)
 
         # Store results.
+
         if args.online_detection == 0: # If not online detection
-            output_dir = RESULTS_DIR + 'Pedestrian Tracking/' + 'EVAL_' + args.detector + '/trackOutput-{}cosineThresh/'.format(args.max_cosine_distance)
+            output_dir = RESULTS_DIR + 'Pedestrian Tracking/' + 'EVAL_' + args.detector + '/trackOutput-{}minConf/'.format(args.min_confidence)
             output_file_path = output_dir + sequence_name + '.txt'
         else:
-            output_file_path = '/temp/hypotheses.txt'
+            output_file_path = './temp_hypotheses.txt'
+
 
         with open(output_file_path, 'w') as output_file:
             avg_fps = 0

@@ -72,7 +72,7 @@ def generate_bboxes(detection_model, output_dir):
 ###############################################################################
 
 if __name__ == '__main__':
-    output_dir = "UA-DETRAC/Object Data/Bboxes/SSD/"
+    output_dir = "./Resources/Vehicles/Bboxes/SSD/"
 
     detection_model, category_index = custom_utils.load_detection_model(DETECTION_MODEL_NAME)
     generate_bboxes(detection_model, output_dir)
