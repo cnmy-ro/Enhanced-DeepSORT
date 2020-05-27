@@ -27,7 +27,7 @@ python run_mot16_benchmark.py --eval_dir_dpm  "./Results/Pedestrian Tracking/EVA
 
 ################################################################################
 min_confidence=0.2
-echo Bechmarking all detectors for cosine threshold $max_cosine_distance 
+echo Bechmarking all detectors for confidence threshold $min_confidence  
 
 for detector in "DPM" "SSD"
 do
@@ -45,7 +45,7 @@ python run_mot16_benchmark.py --eval_dir_dpm  "./Results/Pedestrian Tracking/EVA
 
 ################################################################################
 min_confidence=0.6
-echo Bechmarking all detectors for cosine threshold $max_cosine_distance 
+echo Bechmarking all detectors for confidence threshold $min_confidence 
 
 for detector in "DPM" "SSD"
 do

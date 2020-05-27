@@ -359,11 +359,10 @@ def run_eval_mode(detection_model, args):
         # Store results.
         if args.online_detection == 0 and args.display == 0:
             # Save path for cosine threshold experiment cases
-            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/trackOutput-{}cosineThresh/'.format(args.max_cosine_distance)
-
+            output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/trackOutput-{}minConf/'.format(args.min_confidence)
             output_file_path = output_dir + sequence_name + '.txt'
         else:
-            output_file_path = '/tmp/hypotheses.txt'
+            output_file_path = './temp_hypotheses.txt'
 
         with open(output_file_path, 'w') as output_file:
             for row in results:

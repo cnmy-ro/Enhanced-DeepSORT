@@ -72,14 +72,14 @@ for sequence_name in train_sequence_names:
         gt_frame_bboxes = gt_frame[:, 2:6]
 
         dpm_frame = eval_result_dpm[eval_result_dpm[:,0]==frame_idx]
-        if dpm_frame.shape[0] != 0: # Only proceed if DPM result has this frame
-          dpm_frame_object_ids = dpm_frame[:,1]
-          dpm_frame_bboxes = dpm_frame[:,2:6]
+        #if dpm_frame.shape[0] != 0: # Only proceed if DPM result has this frame
+        dpm_frame_object_ids = dpm_frame[:,1]
+        dpm_frame_bboxes = dpm_frame[:,2:6]
 
         ssd_frame = eval_result_ssd[eval_result_ssd[:,0]==frame_idx]
-        if ssd_frame.shape[0] != 0:
-          ssd_frame_object_ids = ssd_frame[:,1]
-          ssd_frame_bboxes = ssd_frame[:,2:6]
+        #if ssd_frame.shape[0] != 0:
+        ssd_frame_object_ids = ssd_frame[:,1]
+        ssd_frame_bboxes = ssd_frame[:,2:6]
 
 
         # Calculate distance  matrix (IoU)...
@@ -88,17 +88,17 @@ for sequence_name in train_sequence_names:
                               gt_frame_object_ids, # Predicted objects (IDs)
                               self_dist_matrix)
 
-        if dpm_frame.shape[0] != 0:
-          dpm_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, dpm_frame_bboxes)
-          dpm_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
-                                 dpm_frame_object_ids, # Predicted objects (IDs)
-                                 dpm_distance_matrix)
+        #if dpm_frame.shape[0] != 0:
+        dpm_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, dpm_frame_bboxes)
+        dpm_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
+                               dpm_frame_object_ids, # Predicted objects (IDs)
+                               dpm_distance_matrix)
 
-        if ssd_frame.shape[0] != 0:
-          ssd_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, ssd_frame_bboxes)
-          ssd_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
-                                 ssd_frame_object_ids, # Predicted objects (IDs)
-                                 ssd_distance_matrix)
+        #if ssd_frame.shape[0] != 0:
+        ssd_distance_matrix = mm.distances.iou_matrix(gt_frame_bboxes, ssd_frame_bboxes)
+        ssd_accumulator.update(gt_frame_object_ids,   # All ground truth objects (IDs)
+                               ssd_frame_object_ids, # Predicted objects (IDs)
+                               ssd_distance_matrix)
 
 
 
