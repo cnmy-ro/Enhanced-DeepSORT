@@ -1,5 +1,0 @@
-Task-1: Benchmarking using both the default and the SSD detections. Comparing them.
-
-Task-2: Speeding up Deep-SORT
-
-Task-3: Vehicle tracking

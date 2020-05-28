@@ -19,7 +19,7 @@ import custom_utils
 from config import *
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
@@ -185,8 +185,12 @@ def run_test_mode(detection_model, args):
         ## Visualize confirmed tracks
         tracks = tracker.tracks
         for track in tracks:
-            # if not track.is_confirmed() or track.time_since_update > 0:
-            #     continue
+            if not track.is_confirmed() or track.time_since_update > 0:
+                continue
+            x,y,w,h = track.to_tlwh()
+            pt1 = int(x), int(y)
+            pt2 = int(x + w), int(y + h)
+            cv2.rectangle(output_img, pt1, pt2, color, 2)
             color = dsutil_viz.create_unique_color_uchar(track.track_id)
             text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
             center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
@@ -210,7 +214,7 @@ def run_eval_mode(detection_model, args):
     '''
 
     sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))
-    sequence_names = sequence_names[:20] # First 20 sequences  ################
+    sequence_names = sequence_names[1:20] # First 20 sequences  ################
 
 
 
@@ -226,6 +230,10 @@ def run_eval_mode(detection_model, args):
 
     else: # Use SSD detector (and vehicle encoder) on the fly
         encoder = torch.load(VEHICLE_ENCODER_PATH, map_location='cpu')
+        transforms = torchvision.transforms.Compose([torchvision.transforms.ToPILImage(),
+                                                         torchvision.transforms.Resize((128,128)),
+                                                         torchvision.transforms.ToTensor()])
+
 
     gaussian_mask = get_gaussian_mask()
 
@@ -241,13 +249,14 @@ def run_eval_mode(detection_model, args):
             if args.detector == 'DPM' or args.detector == 'RCNN':
                 raise Exception(" Online detection is possible only when using SSD")
 
-        if not USE_PRECOMPUTED_DETECTIONS:
-            if args.detector == 'SSD':
-                bbox_file = bboxes_dir + sequence_name + ".txt"
-            elif args.detector == 'DPM':
-                bbox_file = bboxes_dir + sequence_name + "_Det_DPM.txt"
-            elif args.detector == 'RCNN':
-                bbox_file = bboxes_dir + sequence_name + "_Det_R-CNN.txt"
+        if args.online_detection == 0:
+            if not USE_PRECOMPUTED_DETECTIONS:
+                if args.detector == 'SSD':
+                    bbox_file = bboxes_dir + sequence_name + ".txt"
+                elif args.detector == 'DPM':
+                    bbox_file = bboxes_dir + sequence_name + "_Det_DPM.txt"
+                elif args.detector == 'RCNN':
+                    bbox_file = bboxes_dir + sequence_name + "_Det_R-CNN.txt"
 
         metric = nn_matching.NearestNeighborDistanceMetric("cosine", args.max_cosine_distance, NN_BUDGET)
         tracker = Tracker(metric)
@@ -272,12 +281,11 @@ def run_eval_mode(detection_model, args):
         avg_fps = 0
         for frame_idx in range(1, n_frames+1):
 
-            t1 = time.time()
-
             img_file_path = VEHICLE_DATA_DIR + sequence_name + '/' + img_file_names[frame_idx-1]
             # logger.debug(img_file_path)
             # logger.info("Frame: {}".format(frame_idx))
             frame = cv2.imread(img_file_path)
+            t1 = time.time()
 
             if args.online_detection == 0: # Use pre-computed detections
 
@@ -299,7 +307,7 @@ def run_eval_mode(detection_model, args):
             else:
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 bboxes, detection_scores = detect_vehicles(detection_model, frame_rgb)
-                detection_list = cvt_to_detection_objects(frame_rgb, bboxes, detection_scores, encoder, gaussian_mask)
+                detection_list = cvt_to_detection_objects(frame_rgb, bboxes, detection_scores, encoder, transforms, gaussian_mask)
 
 
             detection_list = [d for d in detection_list if d.confidence >= args.min_confidence]
@@ -335,13 +343,23 @@ def run_eval_mode(detection_model, args):
                     if not track.is_confirmed() or track.time_since_update > 0:
                         continue
                     color = dsutil_viz.create_unique_color_uchar(track.track_id)
+                    x,y,w,h = track.to_tlwh()
+                    pt1 = int(x), int(y)
+                    pt2 = int(x + w), int(y + h)
+                    cv2.rectangle(output_img, pt1, pt2, color, 2)
+
                     text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
                     center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
                     pt2 = pt1[0] + 10 + text_size[0][0], pt1[1] + 10 + text_size[0][1]
                     cv2.rectangle(output_img, pt1, pt2, color, -1)
                     cv2.putText(output_img, str(track.track_id), center, cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 2)
 
-                cv2.putText(output_img, 'FPS: {:.1f}'.format(fps), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+                #cv2.putText(output_img, 'FPS: {:.1f}'.format(fps), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+                cv2.putText(output_img, str(frame_idx), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2, cv2.LINE_AA)
+
+                if (frame_idx >=48 and frame_idx <=54) or (frame_idx >=115 and frame_idx <=120):
+                    cv2.imwrite("Results/Vehicle Tracking/"+args.detector+"_"+str(frame_idx)+".jpg", output_img)
+
                 cv2.imshow('detection output', output_img)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     cv2. destroyAllWindows()
@@ -362,7 +380,7 @@ def run_eval_mode(detection_model, args):
             output_dir = RESULTS_DIR + 'Vehicle Tracking/' + 'EVAL_' + args.detector + '/trackOutput-{}minConf/'.format(args.min_confidence)
             output_file_path = output_dir + sequence_name + '.txt'
         else:
-            output_file_path = './temp_hypotheses.txt'
+            output_file_path = './Results/temp_hypotheses.txt'
 
         with open(output_file_path, 'w') as output_file:
             for row in results:

@@ -15,7 +15,7 @@ RUN_MODE = 'vehicles-EVAL'  # No more needed. Remove this later
     #     'SSD'  - Use (pre-computed or online) MobileNetv2-SSD detections
     #     'RCNN' - Use default pre-computed RCNN detections -- only for vehicle tracking
 
-EVAL_DETECTOR_SETTINGS = {'Detector': 'DPM',
+EVAL_DETECTOR_SETTINGS = {'Detector': 'RCNN',
                           'Online detection': False} # Online detection is possible only while using SSD}
 
 
@@ -39,7 +39,7 @@ NMS_MAX_OVERLAP = 1.0
 MIN_DETECTION_HEIGHT = 0
 MAX_COSINE_DISTANCE = 0.2
 NN_BUDGET = 100
-DISPLAY = False
+DISPLAY = True
 
 RESULTS_DIR = './Results/'
 
@@ -59,7 +59,7 @@ HUMAN_ENCODER_PATH = './Resources/Pedestrians/human_encoder_model/mars-small128.
 # -----------------------------------------------------------------------------
 USE_GAUSSIAN_MASK = True
 VEHICLE_DATA_DIR = "./Data/UA-DETRAC/Insight-MVT_Annotation_Train/"
-USE_PRECOMPUTED_DETECTIONS = True  # True: use precomputed-feature detections (.npy files) in Vehicle-EVAL mode, False: Use bboxes directly (txt files)
+USE_PRECOMPUTED_DETECTIONS = False  # True: use precomputed-feature detections (.npy files) in Vehicle-EVAL mode, False: Use bboxes directly (txt files)
 VEHICLE_DETECTION_DIR_BASE = "./Resources/Vehicles/Detections/"
 VEHICLE_BBOXES_DIR_BASE = "./Resources/Vehicles/Bboxes/"
 

@@ -25,7 +25,7 @@ import custom_utils
 from config import *
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
@@ -178,6 +178,10 @@ def run_cam_mode(detection_model, args):
       for track in tracks:
           if not track.is_confirmed() or track.time_since_update > 0:
               continue
+          x,y,w,h = track.to_tlwh()
+          pt1 = int(x), int(y)
+          pt2 = int(x + w), int(y + h)
+          cv2.rectangle(output_img, pt1, pt2, color, 2)
           color = dsutil_viz.create_unique_color_uchar(track.track_id)
           text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
           center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
@@ -269,7 +273,7 @@ def run_eval_mode(detection_model, args):
             fps = 1/(time.time()-t1)
 
             # Update visualization.
-            if DISPLAY:
+            if args.display == 1:
                 vis.set_image(frame.copy())
                 vis.draw_detections(detection_list)
                 vis.draw_trackers(tracker.tracks)
@@ -282,7 +286,7 @@ def run_eval_mode(detection_model, args):
                 results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3], fps])
 
         # Visualize
-        if DISPLAY:
+        if args.display == 1:
             visualizer = dsutil_viz.Visualization(seq_info, update_ms=5)
         else:
             visualizer = dsutil_viz.NoVisualization(seq_info)
@@ -294,7 +298,7 @@ def run_eval_mode(detection_model, args):
             output_dir = RESULTS_DIR + 'Pedestrian Tracking/' + 'EVAL_' + args.detector + '/trackOutput-{}minConf/'.format(args.min_confidence)
             output_file_path = output_dir + sequence_name + '.txt'
         else:
-            output_file_path = './temp_hypotheses.txt'
+            output_file_path = './Results/temp_hypotheses.txt'
 
 
         with open(output_file_path, 'w') as output_file:
@@ -303,7 +307,7 @@ def run_eval_mode(detection_model, args):
                 output_file.write("{:d},{:d},{:.2f},{:.2f},{:.2f},{:.2f}\n".format(row[0], row[1], row[2], row[3], row[4], row[5]))
                 avg_fps += row[6]
         avg_fps /= n_frames
-        logger.info("----Average FPS: {:.2f}".format(avg_fps))
+        print("----Average FPS: {:.2f}".format(avg_fps))
 
 
 #######################################################################################
