@@ -12,13 +12,11 @@ COMPLETED:
     b. Generate tracking results for all three using a base case (min_confidence=0.4, max_cosine_distance=0.2)
     c. Compute benchmark metrics
 
+6. Perform sensitivity analysis (cosineThresh expt) for both human and vehicle tracking
 
 -----------------------------
 
 TODO:
 
-1. Perform sensitivity analysis (cosineThresh expt) for both human and vehicle tracking
-
-
-2. Add SSD online detection mode for vehicles -- for measuring online operation FPS
+1. Implement the speed-up method
 

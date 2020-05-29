@@ -7,11 +7,16 @@ import tensorflow as tf
 # TF object detection imports
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
+'''
+
+Custom object detection wrapper functions
+
+'''
+
 from object_detection.utils import visualization_utils as vis_util
 
 # Custom imports
 from config import *
-
 
 # patch tf1 into `utils.ops`
 utils_ops.tf = tf.compat.v1

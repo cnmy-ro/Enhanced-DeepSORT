@@ -1,3 +1,17 @@
+'''
+
+Main code file for DeepSORT pedestrian tracker.
+
+Arguments:
+    --mode : 'cam' or 'eval'
+    --detector : 'DPM' or 'SSD'
+    --online_detection : 'True' for running SSD on the fly
+    --min_confidence : 0-1 float
+    --max_cosine_distance : 0-1 float
+    --display: 'True' to visualize tracker output in 'eval' mode
+
+'''
+
 import os, time, logging, argparse
 
 import numpy as np
@@ -25,11 +39,19 @@ import custom_utils
 from config import *
 
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
 def detect_humans(detection_model, frame):
+    '''
+
+    Wrapper function for human detection using the given SSD model
+    Returns:
+        detection_list - list of bboxes in TLWH format
+        detction_scores
+
+    '''
     output_dict =  custom_utils.run_inference_for_single_image(detection_model, frame)
 
     all_bboxes = output_dict['detection_boxes']
@@ -130,6 +152,13 @@ def cvt_to_detection_objects(frame, bboxes, confidence_scores, encoder):
 #                               Run options
 ###############################################################################
 def run_cam_mode(detection_model, args):
+
+    '''
+
+    Run the tracker on camera stream
+
+    '''
+
     cam = cv2.VideoCapture(0)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
@@ -178,11 +207,11 @@ def run_cam_mode(detection_model, args):
       for track in tracks:
           if not track.is_confirmed() or track.time_since_update > 0:
               continue
+          color = dsutil_viz.create_unique_color_uchar(track.track_id)
           x,y,w,h = track.to_tlwh()
           pt1 = int(x), int(y)
           pt2 = int(x + w), int(y + h)
           cv2.rectangle(output_img, pt1, pt2, color, 2)
-          color = dsutil_viz.create_unique_color_uchar(track.track_id)
           text_size = cv2.getTextSize(str(track.track_id), cv2.FONT_HERSHEY_PLAIN, 1, 2)
           center = pt1[0] + 5, pt1[1] + 5 + text_size[0][1]
           pt2 = pt1[0] + 10 + text_size[0][0], pt1[1] + 10 + text_size[0][1]
@@ -199,16 +228,14 @@ def run_cam_mode(detection_model, args):
 
 
 def run_eval_mode(detection_model, args):
-    train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
-                            'MOT16-10', 'MOT16-11', 'MOT16-13']
+    '''
+
+    Evaluate the tracker on MOT-16 training set
 
     '''
-    if args.online_detection == 0: # If using pre-computed detections
-        if args.detector == 'DPM':
-            detection_dir = MOT16_DETECTION_DIR_DPM
-        elif args.detector == 'SSD':
-            detection_dir = MOT16_DETECTION_DIR_SSD
-    '''
+
+    train_sequence_names = ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09',
+                            'MOT16-10', 'MOT16-11', 'MOT16-13']
 
     # Print parameters before starting ----------------
     logger.info("\nConfig ---- \n----Detector: {} \n----Online detection: {}".format(args.detector, args.online_detection))
@@ -237,19 +264,18 @@ def run_eval_mode(detection_model, args):
 
         n_frames = len(seq_info['image_filenames'])
         logger.info("----Total frames:{}".format(n_frames))
-        #logger.info("----Detections file:{}".format(detection_file))
+        logger.info("----Detections file:{}".format(detection_file))
 
-        # logger.debug(detection_file)
+
 
         def frame_callback(vis, frame_idx):
-            # logger.info("Processing Sequence {}, Frame {:05d}" .format(sequence_name, frame_idx))
+            logger.info("Processing Sequence {}, Frame {:05d}" .format(sequence_name, frame_idx))
 
             frame = cv2.imread(seq_info['image_filenames'][frame_idx])
             t1 = time.time()
 
             if args.online_detection == 0: # If not online detection- Use pre-computed detections
                 # Load image and generate detections.
-                #detection_list = create_detections(seq_info["detections"], frame_idx, MIN_DETECTION_HEIGHT)
                 detection_list = create_detections(detections, frame_idx, MIN_DETECTION_HEIGHT)
                 detection_list = [d for d in detection_list if d.confidence >= args.min_confidence]
 
@@ -307,7 +333,7 @@ def run_eval_mode(detection_model, args):
                 output_file.write("{:d},{:d},{:.2f},{:.2f},{:.2f},{:.2f}\n".format(row[0], row[1], row[2], row[3], row[4], row[5]))
                 avg_fps += row[6]
         avg_fps /= n_frames
-        print("----Average FPS: {:.2f}".format(avg_fps))
+        #logger.info("----Average FPS: {:.2f}".format(avg_fps))
 
 
 #######################################################################################

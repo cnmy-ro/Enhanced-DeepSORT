@@ -1,3 +1,18 @@
+'''
+
+Main code file for re-purposed DeepSORT vehicle tracker.
+
+Arguments:
+	--mode : 'test' or 'eval'
+	--video_path : path to input video file, if using 'test' mode
+	--detector : 'DPM', 'RCNN' or 'SSD'
+	--online_detection : 'True' for running SSD on the fly
+	--min_confidence : 0-1 float
+	--max_cosine_distance : 0-1 float
+	--display: 'True' to visualize tracker output
+
+'''
+
 import os, time, logging, argparse
 
 import numpy as np
@@ -19,12 +34,14 @@ import custom_utils
 from config import *
 
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
 def detect_vehicles(detection_model, frame):
     '''
+
+    Wrapper function for detecting 'car', 'bus' and 'truck' objects using the given SSD model
     Returns:
         detection_list - list of bboxes in TLWH format
         detction_scores
@@ -128,6 +145,11 @@ def cvt_to_detection_objects(frame, bboxes, detection_scores, encoder, transform
 ###############################################################################
 
 def run_test_mode(detection_model, args):
+	'''
+
+	Run the tracker on a given input video file
+
+	'''
 
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", args.max_cosine_distance , NN_BUDGET)
     tracker= Tracker(metric)
@@ -210,7 +232,9 @@ def run_test_mode(detection_model, args):
 
 def run_eval_mode(detection_model, args):
     '''
-    Evaluate on UA-DETRAC dataset
+
+    Evaluate the tracker on first 20 training sequences of the UA-DETRAC dataset
+
     '''
 
     sequence_names = sorted(os.listdir(VEHICLE_DATA_DIR))
@@ -282,8 +306,7 @@ def run_eval_mode(detection_model, args):
         for frame_idx in range(1, n_frames+1):
 
             img_file_path = VEHICLE_DATA_DIR + sequence_name + '/' + img_file_names[frame_idx-1]
-            # logger.debug(img_file_path)
-            # logger.info("Frame: {}".format(frame_idx))
+            logger.info("Frame: {}".format(frame_idx))
             frame = cv2.imread(img_file_path)
             t1 = time.time()
 

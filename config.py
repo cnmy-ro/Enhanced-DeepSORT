@@ -1,14 +1,13 @@
+'''
+
+Default configuration for the trackers.
+To use custom configuration, either make changes here or pass as individual arguments to the respective tracker code
+
+'''
+
 ################################################################################
 #                             GENERAL
 ################################################################################
-# RUN_MODE options:
-    #     'humans-CAM'       - Perform online detection and tracking on webcam stream
-    #     'humans-EVAL'      - Perform evaluation on MOT16 data, store the results
-    #     'vehicles-TEST'    - Perform vehicle tracking using test video/image sequence
-    #     'vehicles-EVAL'    - Perform evaluation on UA-DETRAC data, store the results
-
-RUN_MODE = 'vehicles-EVAL'  # No more needed. Remove this later
-
 
 # EVAL mode detector options:
     #     'DPM'  - Use default pre-computed DPM-v5 detections
@@ -47,8 +46,6 @@ RESULTS_DIR = './Results/'
 #                          Human tracking
 # -----------------------------------------------------------------------------
 MOT16_TRAIN_DATA_DIR = './Data/MOT16/train/'
-#MOT16_DETECTION_DIR_DPM = './Resources/Pedestrians/Detections/DPM/MOT16_POI_train/'
-#MOT16_DETECTION_DIR_SSD = './Resources/Pedestrians/Detections/SSD/MOT16_POI_train/'
 MOT16_DETECTION_DIR_BASE = "./Resources/Pedestrians/Detections/"
 
 HUMAN_ENCODER_PATH = './Resources/Pedestrians/human_encoder_model/mars-small128.pb'
