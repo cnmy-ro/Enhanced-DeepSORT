@@ -3,12 +3,7 @@
 ## Objectives
 1. Create an object detection pipeline (based on MobileNet-SSD) and integrate it with Deep-SORT. Provide two modes of operation: Eval mode for benchmarking; Cam mode for deployment. Evaluate quantitatively on MOT16, compare with original.
 2. Adapt Deep-SORT to track vehicles -  requires changing the CNN encoder model. Try to integrate an existing vehicle-specific model into the code. Then build and train my own model and use that instead. Evaluate qualitatively.
-3. Implement Confidence Trigger Detection mechanism for speed-up. Measure the improvement.
-
-## New tools to use
-1. Logging module for Python
-2. Tensorflow 2.0
-3. RWTH Cluster
+3. TODO -- Implement Confidence Trigger Detection mechanism for speed-up. Measure the improvement.
 
 ## Useful links
 
